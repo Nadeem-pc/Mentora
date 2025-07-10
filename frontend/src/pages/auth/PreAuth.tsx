@@ -1,15 +1,15 @@
-import AuthLayout from "@/layouts/AuthLayout";
-import AuthComponent from "@/components/auth/Auth";
+import AuthLayout from "@/layouts/AuthLayout"
+import Role from "@/components/auth/Role"
 
-const Auth = () => {
+const PreAuth = () => {
     return (
         <AuthLayout 
-            heading={ "Welcome Back" }
+            heading={ "Choose your role" }
             text={ "At Mentora, we're building a space where mental well-being is supported and accessible to all. Whether you're here to seek help or provide it, you're part of a mission to make a real difference." }
         >
-            <AuthComponent/>
+            <Role/>
         </AuthLayout>
     )
-} 
+}
 
-export default Auth
+export default PreAuth

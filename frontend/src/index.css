@@ -15,7 +15,7 @@
   --popover-foreground: oklch(0.25 0.05 270);
 
   /* Brand (Primary: Teal ~ #00B3A4) */
-  --primary: oklch(0.72 0.17 195); /* cyan/teal */
+  --primary: oklch(35.21% 0.07284 155.421); /* cyan/teal */
   --primary-foreground: oklch(1 0 0);  /* text on primary bg = white */
 
   /* Secondary (Buttons/Borders) */

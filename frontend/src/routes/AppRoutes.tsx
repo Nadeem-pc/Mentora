@@ -1,12 +1,12 @@
 import { createBrowserRouter } from "react-router-dom";
-import Signup from "@/pages/auth";
-import Landing from "@/pages/client/Landing";
+import PreAuth from "@/pages/auth/PreAuth";
+import Auth from "@/pages/auth";
 
 export const router = createBrowserRouter([
     {
-        path: '/', element: <Landing/>
+        path: '/pre-auth', element: <PreAuth/>
     },
     {
-        path: '/auth', element: <Signup/>
+        path: '/auth', element: <Auth/>
     },
 ])
