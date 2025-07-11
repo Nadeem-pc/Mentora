@@ -5,9 +5,9 @@ const Role = () => {
   const navigate = useNavigate();
 
   const handleSelect = (role: "client" | "therapist") => {
-    navigate("/auth", { state: { role } });
+    localStorage.setItem('role',role)
+    navigate("/auth-layout/auth");
   };
-  
  
   return (
     <div className="rounded-xl p-6 flex flex-col md:flex-row justify-center items-center gap-6">

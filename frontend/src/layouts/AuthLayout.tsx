@@ -1,13 +1,16 @@
-import React, { type ReactNode } from 'react';
 import background_img from '/signup-background.jpg';
+import { Outlet } from 'react-router-dom';
 
-interface AuthLayoutProps {
-    children: ReactNode;
-    heading: string;
-    text: string;
-}
+const AuthLayout: React.FC = () => {
+    const role = localStorage.getItem('role')
+    const heading = role ? "Create an account" : "Welcome Back";
+    const text = !role 
+        ? "At Mentora, we're building a space where mental well-being is supported and accessible to all. Whether you're here to seek help or provide it, you're part of a mission to make a real difference."
+        : role === "therapist" 
+        ? "We believe in changing lives by making high-quality mental healthcare accessible to all. By joining Mentora, you'll play a vital role in turning that vision into reality."
+        : "You don't have to take the first step towards your mental well-being alone. Create an account and start your mental health journey with us, today"
 
-const AuthLayout: React.FC<AuthLayoutProps> = ({ children, heading, text }) => {
+
     return (
         <div className='fixed inset-0'>
             <img 
@@ -34,7 +37,7 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({ children, heading, text }) => {
                     <div className='mb-8 flex justify-center'>
                         <h1 className='flex text-2xl text-white mb-2'>{heading}</h1>
                     </div>
-                    {children}
+                    <Outlet />
                 </div>    
             </div>
         </div>

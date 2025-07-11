@@ -1,12 +1,19 @@
 import { createBrowserRouter } from "react-router-dom";
 import PreAuth from "@/pages/auth/PreAuth";
-import Auth from "@/pages/auth";
+import AuthLayout from "@/layouts/AuthLayout";
+import AuthForm from "@/components/auth/AuthForm";
 
 export const router = createBrowserRouter([
     {
-        path: '/pre-auth', element: <PreAuth/>
-    },
-    {
-        path: '/auth', element: <Auth/>
+        path: '/auth-layout', element: <AuthLayout/>, 
+        
+        children: [
+            {
+                path: 'pre', element: <PreAuth/>
+            },
+            {
+                path: 'auth', element: <AuthForm/>
+            },
+        ]
     },
 ])

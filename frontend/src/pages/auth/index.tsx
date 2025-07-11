@@ -1,15 +1,7 @@
-import AuthLayout from "@/layouts/AuthLayout";
-import AuthComponent from "@/components/auth/Auth";
+import AuthForm from "@/components/auth/Auth"
 
 const Auth = () => {
-    return (
-        <AuthLayout 
-            heading={ "Welcome Back" }
-            text={ "At Mentora, we're building a space where mental well-being is supported and accessible to all. Whether you're here to seek help or provide it, you're part of a mission to make a real difference." }
-        >
-            <AuthComponent/>
-        </AuthLayout>
-    )
+    return <AuthForm/>
 } 
 
 export default Auth
