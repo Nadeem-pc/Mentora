@@ -143,7 +143,10 @@ const AuthForm = () => {
                         />
                     </div>
 
-                    <Button type="submit">Submit</Button>
+                    <Button variant="btnPrimary" type="submit">
+                        {role ? "Create account" : "Sign In"}
+                    </Button>
+
                 </form>
             </Form>
         </div>

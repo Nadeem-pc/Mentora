@@ -10,7 +10,7 @@
   --popover: oklch(1 0 0);
 
   /* Text Colors */
-  --foreground: oklch(0.22 0.05 270);  /* dark gray/blue for headings */
+  --foreground: oklch(17.931% 0.06372 267.701);  /* dark gray/blue for headings */
   --card-foreground: oklch(0.25 0.05 270);
   --popover-foreground: oklch(0.25 0.05 270);
 
@@ -174,5 +174,5 @@ body {
   font-family: 'Poppins', sans-serif;
 }
 .btn-primary {
-  @apply bg-primary text-primary-foreground rounded-lg px-6 py-2 hover:bg-[oklch(0.68_0.15_195)];
+  @apply bg-teal-500 text-primary-foreground rounded-lg px-6 py-2 hover:bg-[oklch(0.68_0.15_195)];
 }
