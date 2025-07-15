@@ -17,4 +17,8 @@ export interface IUser {
 export interface AuthContextType {
   userData: IUser | undefined;
   setUserData: React.Dispatch<React.SetStateAction<IUser | undefined>>;
+   login: (email: string, password: string) => Promise<boolean>;
+  register: (name: string, email: string, password: string) => Promise<boolean>;
+  logout: () => void;
+  error: string | null;
 }
