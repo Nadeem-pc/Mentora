@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 import { registerSchema } from '@/schemas/authSchema';
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -25,11 +26,9 @@ import {
 const AuthForm = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-    const role = localStorage.getItem('role')
+    const role = localStorage.getItem('role');
+    const navigate = useNavigate();
 
-    // const formSchema
-
-    // const {login, register, error} = useAuthContext();
 
     const form = useForm<z.infer<typeof registerSchema>>({
         resolver: zodResolver(registerSchema),
@@ -37,7 +36,7 @@ const AuthForm = () => {
     })
 
     const onSubmit = async (data: z.infer<typeof registerSchema>) => {
-        
+        navigate('/auth-layout/verify-otp')
     }
     
     return (
