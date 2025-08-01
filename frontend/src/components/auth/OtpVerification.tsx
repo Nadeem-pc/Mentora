@@ -2,11 +2,10 @@ import { useState, useRef, useEffect } from 'react';
 
 const OtpVerification: React.FC = () => {
     const [otp, setOtp] = useState<string[]>(['', '', '', '']);
-    const [timer, setTimer] = useState<number>(30);
+    const [timer, setTimer] = useState<number>(60);
     const [canResend, setCanResend] = useState<boolean>(false);
     const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-    // Timer effect
     useEffect(() => {
         if (timer > 0) {
             const interval = setInterval(() => {
@@ -20,29 +19,20 @@ const OtpVerification: React.FC = () => {
     }, [timer]);
 
     const handleChange = (index: number, value: string): void => {
-        // Only allow single digit
         if (value.length > 1) return;
-        
-        // Only allow numbers
         if (!/^\d*$/.test(value)) return;
-
         const newOtp = [...otp];
         newOtp[index] = value;
         setOtp(newOtp);
-
-        // Auto-focus next input
         if (value && index < 3) {
             inputRefs.current[index + 1]?.focus();
         }
     };
 
     const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>): void => {
-        // Handle backspace
         if (e.key === 'Backspace' && !otp[index] && index > 0) {
             inputRefs.current[index - 1]?.focus();
         }
-        
-        // Handle Enter key
         if (e.key === 'Enter') {
             handleSubmit();
         }
@@ -59,7 +49,6 @@ const OtpVerification: React.FC = () => {
         }
         setOtp(newOtp);
         
-        // Focus last filled input or next empty one
         const nextIndex = Math.min(pastedData.length, 3);
         inputRefs.current[nextIndex]?.focus();
     };
@@ -78,7 +67,7 @@ const OtpVerification: React.FC = () => {
         console.log('Resending OTP...');
         // Add your resend logic here
         setOtp(['', '', '', '']);
-        setTimer(30);
+        setTimer(60);
         setCanResend(false);
         inputRefs.current[0]?.focus();
     };

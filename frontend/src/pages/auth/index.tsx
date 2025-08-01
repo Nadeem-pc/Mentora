@@ -1,7 +1,7 @@
-import AuthForm from "@/components/auth/Auth"
+import AuthForm from "@/components/auth/AuthForm"
 
 const Auth = () => {
-    return <AuthForm/>
+    return <AuthForm />
 } 
 
 export default Auth
