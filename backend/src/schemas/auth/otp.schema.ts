@@ -1,7 +1,7 @@
-import { HttpResponse } from "@/middlewares/response-message.constant";
+import { HttpResponse } from "@/constants/response-message.constant";
 import { z } from "zod";
 
-export const verifyOtpSchema = z
+export const otpSchema = z
     .object({
         email: z.string().email(HttpResponse.INVALID_EMAIL),
         otp: z

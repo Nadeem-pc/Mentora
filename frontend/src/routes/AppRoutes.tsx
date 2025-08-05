@@ -1,9 +1,9 @@
 import { createBrowserRouter } from "react-router-dom";
 import PreAuth from "@/pages/auth/PreAuth";
 import AuthLayout from "@/layouts/AuthLayout";
-import VerifyOtp from "@/pages/auth/VerifyOtp";
 import Auth from "@/pages/auth";
 import Landing from "@/pages/client/Landing";
+import OtpForm from "@/components/auth/OTPForm";
 
 export const router = createBrowserRouter([
     {
@@ -17,7 +17,7 @@ export const router = createBrowserRouter([
                 path: 'auth', element: <Auth/>
             },
             {
-                path: 'verify-otp', element: <VerifyOtp/>
+                path: 'verify-otp', element: <OtpForm/>
             },
         ]
     },

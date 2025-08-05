@@ -2,7 +2,7 @@ import { ZodError, ZodSchema } from "zod";
 import formatZodErrors from "../utils/format-zod-error";
 import { Request, Response, NextFunction } from "express";
 import { HttpStatus } from "../constants/status.constant";
-import { HttpResponse } from "./response-message.constant";
+import { HttpResponse } from "../constants/response-message.constant";
 
 export const validate =
   (schema: ZodSchema) =>

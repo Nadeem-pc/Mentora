@@ -1,5 +1,5 @@
 import { ZodError, ZodIssueCode } from "zod";
-import { HttpResponse } from "../middlewares/response-message.constant";
+import { HttpResponse } from "../constants/response-message.constant";
 
 interface FormattedError {
   [key: string]: string;

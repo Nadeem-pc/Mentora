@@ -52,22 +52,25 @@ const AuthForm = () => {
                 const response = await AuthService.login(email, password);
                 if(response){
                     toast.success("Login successful");
-                    navigate('/')
+                    navigate('/');
                 }else{
-                    toast.error("Login failed")
+                    toast.error("Login failed");
                 }
             } else {
-                const response = await AuthService.register(firstName, lastName, email, password);
-                if(response){
-                    toast.success("Otp sended to your email account");
-                    navigate('/auth-layout/verify-otp')
-                } else{
-                    toast.error('Registration failed')
+                if(firstName && lastName){
+                    const response = await AuthService.register(firstName, lastName, email, password);
+                    if(response.success){
+                        toast.success(response.message);
+                        navigate('/auth-layout/verify-otp', {state:email});
+                    } else{
+                        toast.error(response.message);
+                    }
                 }
             }
         } catch (error) {
-            console.log(error)
-            toast.error(`Something went wrong`);
+            console.log(error);
+            const errorMessage = error?.response?.data?.message;
+            toast.error(errorMessage);
         }
     }
 

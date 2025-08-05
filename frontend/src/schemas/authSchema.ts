@@ -48,3 +48,7 @@ export const authFormSchema = (type: FormType) => {
         path: ["confirmPassword"],
     });
 };
+
+export const OtpSchema = z.object({
+    otp: z.string().regex(/^\d{4}$/, { message: "OTP must be exactly 4 digits." })
+})

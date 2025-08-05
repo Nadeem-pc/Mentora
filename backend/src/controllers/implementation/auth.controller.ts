@@ -2,44 +2,42 @@ import { Request, Response, NextFunction } from "express";
 import { HttpStatus } from "@/constants/status.constant";
 import { IAuthController } from "../interface/IAuthController";
 import { IAuthService } from "@/services/interface/IAuthService";
-import { setCookie } from "@/utils/refresh-cookie.util";
+import { HttpResponse } from "@/constants/response-message.constant";
+
 
 export class AuthController implements IAuthController {
-    constructor(private authService: IAuthService){}
+    constructor(private readonly _authService: IAuthService){};
 
-    async register(req: Request, res: Response, next: NextFunction): Promise<void> {
+    registerUser = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
-            const { firstName, lastName, email, password } = req.body
-            console.log(req.body)
-            const user = await this.authService.register(req.body)
-            res.status(HttpStatus.OK).json({email: user})
+            const {firstName, lastName, email, password} = req.body;
+            const result = await this._authService.registerUser(req.body);
+            res.status(HttpStatus.OK).json(result);
         } catch (error) {
-            next(error)
-        }
-    }
-
-    async login(req: Request, res: Response, next: NextFunction): Promise<void> {
-        try {
-            const { email, password } = req.body;
-            const tokens = await this.authService.login(email, password);
-            setCookie(res, tokens.refreshToken)
-            res.status(HttpStatus.OK).json({ token: tokens.accessToken })
-        } catch (error) {
-            next(error)
-        }
-    }
-
-    async refreshAccessToken(req: Request, res: Response, next: NextFunction): Promise<void> {
-        try {
-            const { refreshToken } = req.cookies;
-            console.log('Access Token:', accessToken);
-console.log('Refresh Token:', refreshToken);
-            console.log('Refresh token', refreshToken)
-            const { accessToken, refreshToken: newRefreshToken } = await this.authService.refreshAccessToken(refreshToken);
-            setCookie(res, newRefreshToken);
-            res.status(HttpStatus.OK).json({ token: accessToken });
-        } catch (error) {
+            console.error(error);
             next(error);
         }
     };
-}
+
+    verifyOtp = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+        try {
+            const { email, otp } = req.body;
+            const result = await this._authService.verifyOtp(email, otp);
+            res.status(HttpStatus.CREATED).json({ message: HttpResponse.USER_CREATION_SUCCESS, result});
+        } catch (error) {
+            console.error(error);
+            next(error);
+        }
+    };
+
+    resendOtp = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+        try {
+            const { email } = req.body;
+            const result = await this._authService.resendOtp(email);
+            res.status(HttpStatus.OK).json(result);
+        } catch (error) {
+            console.error(error);
+            next(error);
+        }
+    }
+};

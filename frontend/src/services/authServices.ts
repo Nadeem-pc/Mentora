@@ -1,5 +1,10 @@
 import { authInstance } from "@/config/axios.config";
 
+interface OtpData {
+  email: string;
+  otp: string;
+}
+
 export const AuthService = {
   login: async (email: string, password: string) => {
     const response = await authInstance.post("/login", { email, password });
@@ -16,12 +21,32 @@ export const AuthService = {
     return response.data;
   },
 
-  refreshToken: async () => {
-    // try {
-      const response = await authInstance.post("/refresh-token", {})
-      return response.data
-    // } catch (error) {
-    //   return error
-    // }
+  verifyOtp: async (data: OtpData) => {
+    try {
+      const response = await authInstance.post("/verify-otp", data );
+      return response.data;
+    } catch (error) {
+      console.error(error);
+      throw error;
+    }
+  },
+
+  resendOtp: async (email: string) => {
+    try {
+      const response = await authInstance.post("/resend-otp", { email });
+      return response.data;
+    } catch (error) {
+      console.error(error);
+      throw error;
+    }
   }
+
+  // refreshToken: async () => {
+  //   // try {
+  //     const response = await authInstance.post("/refresh-token", {})
+  //     return response.data
+  //   // } catch (error) {
+  //   //   return error
+  //   // }
+  // }
 };

@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { verifyAccessToken } from "@/utils/jwt.util";
 import {HttpStatus} from "@/constants/status.constant";
 import { createHttpError } from "@/utils/http-error.util";
-import { HttpResponse } from "./response-message.constant";
+import { HttpResponse } from "../constants/response-message.constant";
 
 export default function (
     userLevel: "User" | "Admin" | "Therapist"

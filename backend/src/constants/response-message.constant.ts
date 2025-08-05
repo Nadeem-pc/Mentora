@@ -7,6 +7,7 @@ export enum HttpResponse {
     NO_TOKEN= "Token not provided",
     OTP_INCORRECT= "Incorrect otp, try again",
     OTP_NOT_FOUND= "Otp not found",
+    OTP_RESENDED = "New Otp shared",
     INVALID_CREDENTIALS= "Invalid credentials",
     USER_CREATION_FAILED= "User creation failed",
     USER_CREATION_SUCCESS= "User created successfully",

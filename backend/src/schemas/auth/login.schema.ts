@@ -1,4 +1,4 @@
-import { HttpResponse } from "../middlewares/response-message.constant";
+import { HttpResponse } from "@/constants/response-message.constant";
 import { z } from "zod";
 
 export const loginSchema = z
