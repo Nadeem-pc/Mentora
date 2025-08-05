@@ -7,7 +7,4 @@ export const transporter = nodemailer.createTransport({
         user: env.SENDER_EMAIL,
         pass: env.PASSKEY
     },
-    // tls: {
-    //     rejectUnauthorized: false
-    // }
 });
