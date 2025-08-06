@@ -1,24 +1,16 @@
 export interface IUser {
-    firstName: string,
-    lastName: string,
-    email: string,
-    accessToken: string,
-    isAuthenticated: Boolean
+  firstName: string,
+  lastName: string,
+  email: string,
+  accessToken: string,
+  isAuthenticated: boolean
 }
 
-// type FormFields = {
-//     firstName?: string,
-//     lastName?: string,
-//     email: string,
-//     password: string,
-//     confirmPassword?: string
-// }
-
 export interface AuthContextType {
-  userData: IUser | undefined;
-  setUserData: React.Dispatch<React.SetStateAction<IUser | undefined>>;
-   login: (email: string, password: string) => Promise<boolean>;
-  register: (name: string, email: string, password: string) => Promise<boolean>;
+  userData?: IUser;
+  setUserData: (user: IUser) => void;
+  login: (email: string, password: string) => Promise<boolean>;
+  register: (firstName: string, lastName: string, email: string, password: string) => Promise<boolean>;
   logout: () => void;
   error: string | null;
 }

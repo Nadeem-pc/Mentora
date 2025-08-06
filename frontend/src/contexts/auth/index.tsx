@@ -1,38 +1,6 @@
-// import { createContext, useContext, useState, type ReactNode } from "react";
-// import type { AuthContextType, IUser } from "@/types/auth.types";
-
-// const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-// export const AuthContextProvider = ({ children }: { children: ReactNode }) => {
-//   const [userData, setUserData] = useState<IUser | undefined>(undefined);
-
-//   return (
-//     <AuthContext.Provider value={{ 
-//             userData, 
-//             setUserData,
-//         }}>
-//       {children}
-//     </AuthContext.Provider>
-//   );
-// };
-
-// export const useAuth = () => {
-//   const context = useContext(AuthContext);
-//   if (!context) {
-//     throw new Error("useAuth must be used within an AuthContextProvider");
-//   }
-//   return context;
-// };
-
-
-
-import {
-  createContext,
-  useContext,
-  useState,
-  type ReactNode,
-} from "react";
+import { createContext, useContext, useState, type ReactNode } from "react";
 import type { AuthContextType, IUser } from "@/types/auth.types";
+import { AuthService } from "@/services/authServices";
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -42,19 +10,8 @@ export const AuthContextProvider = ({ children }: { children: ReactNode }) => {
 
   const login = async (email: string, password: string) => {
     setError(null);
-
     try {
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) throw new Error(result.message || "Login failed");
+      const result = await AuthService.signIn(email, password);
 
       const user: IUser = {
         firstName: result.firstName,
@@ -68,32 +25,24 @@ export const AuthContextProvider = ({ children }: { children: ReactNode }) => {
       localStorage.setItem("auth", JSON.stringify(user));
       return true;
     } catch (err: any) {
-      setError(err.message);
+      setError(err.response?.data?.message || "Login failed");
       return false;
-    } 
+    }
   };
 
-  const register = async (name: string, email: string, password: string) => {
+  const register = async (
+    firstName: string,
+    lastName: string,
+    email: string,
+    password: string
+  ) => {
     setError(null);
-
     try {
-      const response = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ name, email, password }),
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) throw new Error(result.message || "Registration failed");
-
+      await AuthService.signUp(firstName, lastName, email, password);
       return true;
     } catch (err: any) {
-      setError(err.message);
+      setError(err.response?.data?.message || "Registration failed");
       return false;
-    } finally {
     }
   };
 
