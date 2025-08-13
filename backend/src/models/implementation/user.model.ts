@@ -1,5 +1,6 @@
 import { model, Schema } from "mongoose";
 import { IUserModel } from "../interface/user.model.interface";
+import { required } from "zod/v4/core/util.cjs";
 
 const userSchema = new Schema<IUserModel>({
     firstName: {
@@ -28,7 +29,7 @@ const userSchema = new Schema<IUserModel>({
         enum: ["Active", "Blocked"],
         default: "Active"
     },
-});
+}, {timestamps: true});
 
 const User = model<IUserModel>("User", userSchema);
 export default User;
