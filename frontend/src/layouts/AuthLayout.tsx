@@ -32,10 +32,6 @@ const AuthLayout: React.FC = () => {
                 alt=""  
             />
 
-            <h1 className='absolute top-70 -left-40 md:hidden text-[90px] md:text-[140px] font-bold text-primary/80 drop-shadow-xl leading-tight uppercase -rotate-90'>
-                Mentora
-            </h1>
-
             <div className='md:absolute mt-5 md:top-18 md:left-30 max-w-lg md:text-start'>
                 <h1 className='hidden md:block text-2xl md:text-4xl w-full font-semibold text-gray-800 mb-4 leading-tight'>
                     Welcome to Mentora!
@@ -45,7 +41,7 @@ const AuthLayout: React.FC = () => {
                 </p>
             </div>
 
-            <div className='bg-primary absolute top-0 right-0 h-full md:me-25 md:min-w-[440px] md:max-w-[440px] flex items-center justify-end p-8'>
+            <div className='bg-primary absolute top-0 right-0 h-full w-full md:me-25 md:min-w-[440px] md:max-w-[440px] flex items-center justify-end p-8'>
                 <div className='rounded-lg p-8 max-w-md w-full'>
                     <div className='mb-8 flex justify-center'>
                         <h1 className='flex text-2xl text-white mb-2'>{heading}</h1>
