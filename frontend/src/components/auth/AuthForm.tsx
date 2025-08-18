@@ -106,13 +106,27 @@ const AuthForm = () => {
                         <FormField control={form.control} type="email" name="email" label="Email" placeholder="Enter your email" />                
                     </div>
 
-                    <div>
-                        <FormField control={form.control} type="password" name="password" label="Password" placeholder="Enter your password" />
+                    <div className="relative">
+                        <FormField control={form.control} type={showPassword ? "text" : "password"} name="password" label="password" placeholder="Enter your password" />
+                        <button
+                            type="button"
+                            className='absolute right-3 top-3 transform -translate-y-1/2 text-gray-400 hover:text-gray-600'
+                            onClick={() => setShowPassword((prev) => !prev)}
+                        >
+                            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                        </button>
                     </div>
 
                     {authState === 'register' && (
-                        <div>
-                            <FormField control={form.control} type="password" name="confirmPassword" label="Confirm Password" placeholder="Confirm your password" />
+                        <div className="relative">
+                            <FormField control={form.control} type={showConfirmPassword ? "text" : "password"} name="confirmPassword" label="Confirm Password" placeholder="Confirm your password" />
+                            <button
+                                type="button"
+                                className="absolute right-3 top-1 text-gray-400 hover:text-gray-600"
+                                onClick={() => setShowConfirmPassword((prev) => !prev)}
+                            >
+                                {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                            </button>
                         </div>
                     )}
 
