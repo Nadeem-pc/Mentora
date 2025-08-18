@@ -62,7 +62,7 @@ const AuthForm = () => {
                     const response = await AuthService.register(firstName, lastName, email, password, role);
                     if(response.success){
                         toast.success(response.message);
-                        navigate('/auth-layout/verify-otp', { state: email });
+                        navigate('/auth/verify-otp', { state: email });
                     } else{
                         toast.error(response.message);
                     }
@@ -115,6 +115,18 @@ const AuthForm = () => {
                         >
                             {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                         </button>
+
+                        {authState === 'login' && (
+                            <div className="flex justify-end mt-2">
+                                <button
+                                    type="button"
+                                    onClick={() => navigate('/auth/forgot-password')}
+                                    className="text-sm text-blue-500 hover:underline hover:text-blue-600 transition"
+                                >
+                                    Forgot your password?
+                                </button>
+                            </div>
+                        )}
                     </div>
 
                     {authState === 'register' && (
@@ -134,6 +146,7 @@ const AuthForm = () => {
                         {authState !== 'register' ? "Sign In" : "Create account"}
                     </Button>
                 </form>
+
             </Form>
 
             <div className='flex items-center '>
@@ -156,7 +169,7 @@ const AuthForm = () => {
                 {authState === 'login' && (  
                     <p className='text-sm text-white mr-2'>
                         Don't have an account?{' '}
-                        <a onClick={() =>{ navigate('/auth-layout/pre')}} className='text-white/55 hover:text-white font-medium underline'>
+                        <a onClick={() =>{ navigate('/auth/role')}} className='text-white/55 hover:text-white font-medium underline'>
                             Sign up
                         </a>
                     </p>
