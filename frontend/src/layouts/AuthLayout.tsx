@@ -1,8 +1,21 @@
+import { useEffect, useState } from 'react';
 import background_img from '/signup-background.jpg';
 import { Outlet } from 'react-router-dom';
 
 const AuthLayout: React.FC = () => {
-    const role = localStorage.getItem('role')
+    const [role, setRole] = useState<string | null>(localStorage.getItem('role'));
+    useEffect(() => {
+        const handleStorageChange = () => {
+            setRole(localStorage.getItem('role'));
+        }
+
+        window.addEventListener('storage', handleStorageChange);
+
+        return () => {
+            window.removeEventListener('storage', handleStorageChange);
+        };
+    }, []);
+
     const heading = role ? "Create an account" : "Welcome Back";
     const text = !role 
         ? "At Mentora, we're building a space where mental well-being is supported and accessible to all. Whether you're here to seek help or provide it, you're part of a mission to make a real difference."
@@ -37,7 +50,7 @@ const AuthLayout: React.FC = () => {
                     <div className='mb-8 flex justify-center'>
                         <h1 className='flex text-2xl text-white mb-2'>{heading}</h1>
                     </div>
-                    <Outlet />
+                    <Outlet context={{ setRole }}/>
                 </div>    
             </div>
         </div>
