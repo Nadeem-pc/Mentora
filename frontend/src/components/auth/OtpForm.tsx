@@ -92,13 +92,16 @@ const OtpForm: React.FC = () => {
     })
 
     const onSubmit = async (data: z.infer<typeof OtpSchema>) => {
+        if(timer === 0) toast.error("OTP has expired. Please request a new one.")
         try {
             const response = await AuthService.verifyOtp({ email, ...data });
-            if(response.result.success){
-                toast.success(response.result.message);
-                navigate('/');
+            if(response && response.user && response.accessToken){
+                localStorage.removeItem('role');
+                localStorage.setItem("accessToken", response.accessToken);
+                toast.success('Registration successfull');
+                navigate('/', { replace: true });
             }else{
-                toast.error(response.result.message)
+                toast.error(response.message || "Failed to resend OTP");
             }
         } catch (error) {
             console.error(error);

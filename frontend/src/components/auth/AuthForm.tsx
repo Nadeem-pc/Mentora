@@ -15,17 +15,18 @@ import { AuthService } from "@/services/authServices"
 
 
 const AuthForm = () => {
-
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const navigate = useNavigate()
 
     const [authState, setAuthState] = useState<'login' | 'register'>('login');
-
+    const [role, setRole] = useState<string | null>(null);
+    
     useEffect(() => {
         const storedRole = localStorage.getItem('role');
         if (storedRole) {
-           setAuthState('register')
+           setAuthState('register');
+           setRole(storedRole);
         }
     }, []);
 
@@ -50,18 +51,18 @@ const AuthForm = () => {
         try {
             if (authState === "login") {
                 const response = await AuthService.login(email, password);
-                if(response){
-                    toast.success("Login successful");
-                    navigate('/');
+                if(response.success){
+                    toast.success(response.message);
+                    navigate('/', { replace: true });
                 }else{
-                    toast.error("Login failed");
+                    toast.error(response.message);
                 }
             } else {
-                if(firstName && lastName){
-                    const response = await AuthService.register(firstName, lastName, email, password);
+                if(firstName && lastName && role){
+                    const response = await AuthService.register(firstName, lastName, email, password, role);
                     if(response.success){
                         toast.success(response.message);
-                        navigate('/auth-layout/verify-otp', {state:email});
+                        navigate('/auth-layout/verify-otp', { state: email });
                     } else{
                         toast.error(response.message);
                     }

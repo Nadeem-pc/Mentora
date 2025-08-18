@@ -1,11 +1,15 @@
 import { User, Stethoscope } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useOutletContext } from "react-router-dom";
+
+type AuthLayoutContext = { setRole: React.Dispatch<React.SetStateAction<string | null>> };
 
 const Role = () => {
   const navigate = useNavigate();
+  const { setRole } = useOutletContext<AuthLayoutContext>();
 
   const handleSelect = (role: "client" | "therapist") => {
     localStorage.setItem('role',role)
+    setRole(role);
     navigate("/auth-layout/auth");
   };
  
