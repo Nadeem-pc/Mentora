@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import background_img from '/signup-background.jpg';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 
 const AuthLayout: React.FC = () => {
     const [role, setRole] = useState<string | null>(localStorage.getItem('role'));
@@ -16,7 +16,8 @@ const AuthLayout: React.FC = () => {
         };
     }, []);
 
-    const heading = role ? "Create an account" : "Welcome Back";
+    const location = useLocation();
+    const heading = location.pathname === '/auth-layout/role' ? "Select Your Role" : role ?  "Create an account" : "Welcome Back";
     const text = !role 
         ? "At Mentora, we're building a space where mental well-being is supported and accessible to all. Whether you're here to seek help or provide it, you're part of a mission to make a real difference."
         : role === "therapist" 
