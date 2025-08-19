@@ -56,3 +56,18 @@ export const OtpSchema = z.object({
 export const forgotPasswordSchema = z.object({
     email: z.string().min(1, { message: "Email is required" }).email({ message: "Invalid email address" })
 });
+
+export const resetPasswordSchema = z.object({
+    password: z
+        .string()
+        .min(8, "Password must be at least 8 characters")
+        .regex(/[a-z]/, "Password must contain at least one lowercase letter")
+        .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+        .regex(/[0-9]/, "Password must contain at least one digit")
+        .regex(/[^a-zA-Z0-9]/, "Password must contain at least one special character"),
+
+    confirmPassword: z.string().min(1, { message: "Please confirm your password" }),
+
+}).refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords do not match",
+});
