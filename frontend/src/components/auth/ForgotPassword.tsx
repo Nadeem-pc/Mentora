@@ -27,9 +27,9 @@ const ForgotPassword: React.FC = () => {
         try {
             setIsLoading(true);
             const response = await AuthService.forgotPassword(data);
-            if(response.data?.message){
-                toast.success(response.data?.message);
+            if(response.message){
                 setTimeout(() => {
+                    toast.success(response.message);
                     setSuccess(true);
                     setIsLoading(false);
                 }, 1500);
@@ -53,16 +53,16 @@ const ForgotPassword: React.FC = () => {
                     <CheckCircle className="w-8 h-8 text-green-600" />
                 </div>
                 
-                <h2 className="text-2xl font-bold text-white mb-4">
+                <h2 className="text-2xl text-white mb-4">
                     Check your email
                 </h2>
                 
-                <p className="text-gray-600 mb-6">
+                <p className="text-white/80 mb-4">
                     We've sent a password reset link to{' '}
-                    {/* <span className="font-medium text-gray-900">{formState.email}</span> */}
+                    <span className="font-bold text-white/90">{form.getValues("email")}</span>
                 </p>
                 
-                <p className="text-sm text-gray-500 mb-8">
+                <p className="text-[12px] text-white/80 mb-8">
                     Didn't receive the email? Check your spam folder.
                 </p>
                 
