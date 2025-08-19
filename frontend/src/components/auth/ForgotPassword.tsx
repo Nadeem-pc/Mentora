@@ -35,12 +35,18 @@ const ForgotPassword: React.FC = () => {
                 }, 1500);
             }else {
                 setIsLoading(false);
-                toast.error(response?.error || 'Sending OTP failed')
+                toast.error(response?.error || 'Sending reset link failed')
             }
         } catch (error) {
+            setTimeout(() => {
+                setIsLoading(false);
+                if (error.response?.data?.message) {
+                    toast.error(error.response.data.message);
+                } else {
+                    toast.error("Something went wrong");
+                }
+            }, 1000);
             console.error(error);
-            setIsLoading(false);
-            toast.error("Something went wrong");
         }
     };
 
