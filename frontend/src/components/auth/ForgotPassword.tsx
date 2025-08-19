@@ -29,18 +29,18 @@ const ForgotPassword: React.FC = () => {
             const response = await AuthService.forgotPassword(data);
             if(response.message){
                 setTimeout(() => {
+                    setIsLoading(false);
                     toast.success(response.message);
                     setSuccess(true);
-                    setIsLoading(false);
                 }, 1500);
             }else {
+                setIsLoading(false);
                 toast.error(response?.error || 'Sending OTP failed')
             }
         } catch (error) {
-            console.log(error);
-            toast.error("Something went wrong");
-        } finally {
+            console.error(error);
             setIsLoading(false);
+            toast.error("Something went wrong");
         }
     };
 
