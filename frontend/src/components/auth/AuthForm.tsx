@@ -17,7 +17,7 @@ import { AuthService } from "@/services/authServices"
 const AuthForm = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-    const navigate = useNavigate()
+    const navigate = useNavigate();
 
     const [authState, setAuthState] = useState<'login' | 'register'>('login');
     const [role, setRole] = useState<string | null>(null);
@@ -81,7 +81,7 @@ const AuthForm = () => {
             {authState !== 'login' && (
                 <button
                     onClick={() => navigate(-1)}
-                    className="flex items-center gap-2 text-sm text-blue-600 hover:underline"
+                    className="flex items-center gap-2 text-sm text-green-600 hover:text-green-700"
                     >
                     <ArrowLeft size={18} />
                     Back
@@ -146,7 +146,6 @@ const AuthForm = () => {
                         {authState !== 'register' ? "Sign In" : "Create account"}
                     </Button>
                 </form>
-
             </Form>
 
             <div className='flex items-center '>
