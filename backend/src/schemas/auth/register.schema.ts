@@ -11,6 +11,7 @@ export const registerSchema = z
   .object({
     firstName: nameSchema,
     lastName: nameSchema,
+    role: z.string(),
     email: z.string().email(HttpResponse.INVALID_EMAIL),
     password: z
     .string()
