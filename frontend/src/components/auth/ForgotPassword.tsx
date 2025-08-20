@@ -32,7 +32,7 @@ const ForgotPassword: React.FC = () => {
                     setIsLoading(false);
                     toast.success(response.message);
                     setSuccess(true);
-                }, 1500);
+                }, 800);
             }else {
                 setIsLoading(false);
                 toast.error(response?.error || 'Sending reset link failed')
@@ -121,7 +121,7 @@ const ForgotPassword: React.FC = () => {
                                     Sending reset link...
                                 </div>
                             ) : (
-                                'Send reset link'
+                                'Reset Password'
                             )}
                         </button>
                     </form>
