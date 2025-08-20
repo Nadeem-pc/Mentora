@@ -10,7 +10,7 @@ const Role = () => {
   const handleSelect = (role: "client" | "therapist") => {
     localStorage.setItem('role',role)
     setRole(role);
-    navigate("/auth-layout/auth");
+    navigate("/auth/form");
   };
  
   return (
