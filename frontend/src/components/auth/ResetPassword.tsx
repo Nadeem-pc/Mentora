@@ -76,22 +76,23 @@ const ResetPassword: React.FC<ResetPasswordFormProps> = ({ isLoading = false }) 
 
       <FormProvider {...form}>
         <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-          <div className="relative">
-            <FormField
-              control={form.control}
-              type={showNewPassword ? 'text' : 'password'}
-              name="password"
-              label="Password"
-              placeholder="Enter your password"
-            />
-            <button
-              type="button"
-              onClick={() => setShowNewPassword(!showNewPassword)}
-              className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
-            >
-              {showNewPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-            </button>
-          </div>
+            <div className="relative">
+                <FormField
+                    control={form.control}
+                    type={showNewPassword ? 'text' : 'password'}
+                    name="password"
+                    label="Password"
+                    placeholder="Enter your password"
+                />
+                <button
+                    type="button"
+                    onClick={() => setShowNewPassword(!showNewPassword)}
+                    className="absolute top-5 right-3 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                    {showNewPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                </button>
+            </div>
+
 
           {/* Password Strength Indicator */}
           {newPassword && (
