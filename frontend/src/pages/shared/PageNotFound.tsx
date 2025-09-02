@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Heart, Leaf, Home, ArrowRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const NotFoundPage: React.FC = () => {
     const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
@@ -14,13 +15,11 @@ const NotFoundPage: React.FC = () => {
         return () => window.removeEventListener('mousemove', handleMouseMove);
     }, []);
 
-    const handleGoHome = () => window.location.href = '/';
+    const navigate = useNavigate();
 
     return (
         <div className="min-h-screen w-screen bg-gradient-to-br from-green-50 via-teal-50 to-cyan-50 relative overflow-hidden">
-            {/* Animated background elements */}
             <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                {/* Floating leaves/elements */}
                 <div 
                     className="absolute w-64 h-64 bg-gradient-to-r from-green-200/30 to-teal-200/30 rounded-full blur-3xl animate-pulse"
                     style={{
@@ -38,7 +37,6 @@ const NotFoundPage: React.FC = () => {
                     }}
                 />
                 
-                {/* Decorative elements */}
                 <div className="absolute top-20 left-20 w-4 h-4 bg-green-400 rounded-full animate-bounce delay-300" />
                 <div className="absolute top-40 right-32 w-6 h-6 bg-teal-400 rounded-full animate-bounce delay-700" />
                 <div className="absolute bottom-32 left-32 w-3 h-3 bg-cyan-400 rounded-full animate-bounce delay-1000" />
@@ -46,9 +44,7 @@ const NotFoundPage: React.FC = () => {
             </div>
 
             <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4 text-center">
-                {/* Main 404 Section */}
                 <div className="max-w-4xl mx-auto">
-                    {/* Large 404 with leaf decoration */}
                     <div className="relative mb-8">
                         <div className="text-9xl md:text-[12rem] font-bold bg-gradient-to-r from-green-600 via-teal-600 to-cyan-600 bg-clip-text text-transparent animate-pulse">
                             404
@@ -61,7 +57,6 @@ const NotFoundPage: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* Calming message */}
                     <div className="mb-12 space-y-4">
                         <h1 className="text-4xl md:text-5xl font-bold text-gray-800 mb-4">
                             <span className="bg-gradient-to-r from-green-700 to-teal-700 bg-clip-text text-transparent">
@@ -77,28 +72,23 @@ const NotFoundPage: React.FC = () => {
                         </p>
                     </div>
 
-                    {/* Home Button */}
                     <div className="flex justify-center">
                         <button
-                            onClick={handleGoHome}
+                            onClick={() => navigate(-1)}
                             onMouseEnter={() => setIsHovered(true)}
                             onMouseLeave={() => setIsHovered(false)}
                             className="group relative inline-flex items-center px-8 py-4 text-lg font-semibold text-white transition-all duration-300 ease-out transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-green-300/50"
                         >
-                            {/* Button background with gradient */}
                             <div className="absolute inset-0 bg-gradient-to-r from-green-500 via-teal-500 to-cyan-500 rounded-2xl transition-all duration-300 group-hover:shadow-xl group-hover:shadow-green-500/25" />
                             
-                            {/* Animated background overlay */}
                             <div className="absolute inset-0 bg-gradient-to-r from-green-400 via-teal-400 to-cyan-400 rounded-2xl opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
                             
-                            {/* Button content */}
                             <div className="relative flex items-center space-x-3">
                                 <Home className={`w-6 h-6 transition-transform duration-300 ${isHovered ? 'animate-bounce' : ''}`} />
-                                    <span>Find Your Way Home</span>
+                                    <span>Back to Previous Page</span>
                                 <ArrowRight className={`w-5 h-5 transition-transform duration-300 ${isHovered ? 'translate-x-1' : ''}`} />
                             </div>
                             
-                            {/* Subtle glow effect */}
                             <div className="absolute inset-0 rounded-2xl bg-white/20 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
                         </button>
                     </div>
