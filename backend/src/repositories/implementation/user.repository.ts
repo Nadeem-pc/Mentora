@@ -2,6 +2,7 @@ import { IUserModel } from "@/models/interface/user.model.interface";
 import { BaseRepository } from "../base.repository";
 import User from "@/models/implementation/user.model";
 import { IUserRepository } from "../interface/IUserRepository";
+import { Types } from "mongoose";
 
 export class UserRepository extends BaseRepository<IUserModel> implements IUserRepository {
   constructor(){
@@ -26,4 +27,43 @@ export class UserRepository extends BaseRepository<IUserModel> implements IUserR
     }
   };
 
+    async findUserById(id: string): Promise<IUserModel | null> {
+    try {
+      return await this.findById(new Types.ObjectId(id));
+    } catch (error) {
+      console.error(error);
+      throw new Error("Error while finding user by Id");
+    }
+  }
+
+  async findAll(): Promise<IUserModel[]> {
+    try {
+      return await this.model.find();
+    } catch (error) {
+      console.error(error);
+      throw new Error("Error fetching all users");
+    }
+  }
+
+  async updateUserStatus(id: string, status: string): Promise<IUserModel | null> {
+    try {
+        return await this.model.findByIdAndUpdate(
+            new Types.ObjectId(id),
+            { status },
+            { new: true }
+        );
+    } catch (error) {
+        console.error(error);
+        throw new Error("Error updating user status");
+    }
+  }
+
+    async updatePassword(email: string, hashedPassword: string): Promise<IUserModel | null> {
+    try {
+      return await this.model.findOneAndUpdate({ email: email }, { $set: { password: hashedPassword } }, { new: true });
+    } catch (error) {
+      console.error(error);
+      throw new Error("errror while updating the password");
+    }
+  }
 };
