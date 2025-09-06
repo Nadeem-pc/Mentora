@@ -20,5 +20,5 @@ export const env = {
     JWT_REFRESH_SECRET: getEnvVar('JWT_REFRESH_SECRET'),
     SENDER_EMAIL: getEnvVar('SENDER_EMAIL'),
     PASSKEY: getEnvVar('PASSKEY'),
-    
+    RESET_PASS_URL: getEnvVar('RESET_PASS_URL'),
 };
