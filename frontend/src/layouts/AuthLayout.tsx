@@ -1,9 +1,25 @@
+import { useEffect, useState } from 'react';
 import background_img from '/signup-background.jpg';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 
 const AuthLayout: React.FC = () => {
-    const role = localStorage.getItem('role')
-    const heading = role ? "Create an account" : "Welcome Back";
+    const [role, setRole] = useState<string | null>(localStorage.getItem('role'));
+    useEffect(() => {
+        const handleStorageChange = () => {
+            setRole(localStorage.getItem('role'));
+        }
+
+        window.addEventListener('storage', handleStorageChange);
+
+        return () => {
+            window.removeEventListener('storage', handleStorageChange);
+        };
+    }, []);
+
+    const location = useLocation();
+    const heading = location.pathname === '/auth/role' ? "Select Your Role" 
+        : location.pathname === '/auth/forgot-password' ? ""
+        : role ?  "Create an account" : "Welcome Back" ;
     const text = !role 
         ? "At Mentora, we're building a space where mental well-being is supported and accessible to all. Whether you're here to seek help or provide it, you're part of a mission to make a real difference."
         : role === "therapist" 
@@ -19,10 +35,6 @@ const AuthLayout: React.FC = () => {
                 alt=""  
             />
 
-            <h1 className='absolute top-70 -left-40 md:hidden text-[90px] md:text-[140px] font-bold text-primary/80 drop-shadow-xl leading-tight uppercase -rotate-90'>
-                Mentora
-            </h1>
-
             <div className='md:absolute mt-5 md:top-18 md:left-30 max-w-lg md:text-start'>
                 <h1 className='hidden md:block text-2xl md:text-4xl w-full font-semibold text-gray-800 mb-4 leading-tight'>
                     Welcome to Mentora!
@@ -32,12 +44,12 @@ const AuthLayout: React.FC = () => {
                 </p>
             </div>
 
-            <div className='bg-primary absolute top-0 right-0 h-full md:me-25 md:min-w-[440px] md:max-w-[440px] flex items-center justify-end p-8'>
+            <div className='bg-primary absolute top-0 right-0 h-full w-full md:me-25 md:min-w-[440px] md:max-w-[440px] flex items-center justify-end p-8'>
                 <div className='rounded-lg p-8 max-w-md w-full'>
                     <div className='mb-8 flex justify-center'>
                         <h1 className='flex text-2xl text-white mb-2'>{heading}</h1>
                     </div>
-                    <Outlet />
+                    <Outlet context={{ setRole }}/>
                 </div>    
             </div>
         </div>

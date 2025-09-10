@@ -15,17 +15,18 @@ import { AuthService } from "@/services/authServices"
 
 
 const AuthForm = () => {
-
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-    const navigate = useNavigate()
+    const navigate = useNavigate();
 
     const [authState, setAuthState] = useState<'login' | 'register'>('login');
-
+    const [role, setRole] = useState<string | null>(null);
+    
     useEffect(() => {
         const storedRole = localStorage.getItem('role');
         if (storedRole) {
-           setAuthState('register')
+           setAuthState('register');
+           setRole(storedRole);
         }
     }, []);
 
@@ -50,18 +51,18 @@ const AuthForm = () => {
         try {
             if (authState === "login") {
                 const response = await AuthService.login(email, password);
-                if(response){
-                    toast.success("Login successful");
-                    navigate('/');
+                if(response.success){
+                    toast.success(response.message);
+                    navigate('/', { replace: true });
                 }else{
-                    toast.error("Login failed");
+                    toast.error(response.message);
                 }
             } else {
-                if(firstName && lastName){
-                    const response = await AuthService.register(firstName, lastName, email, password);
+                if(firstName && lastName && role){
+                    const response = await AuthService.register(firstName, lastName, email, password, role);
                     if(response.success){
                         toast.success(response.message);
-                        navigate('/auth-layout/verify-otp', {state:email});
+                        navigate('/auth/verify-otp', { state: email });
                     } else{
                         toast.error(response.message);
                     }
@@ -80,7 +81,7 @@ const AuthForm = () => {
             {authState !== 'login' && (
                 <button
                     onClick={() => navigate(-1)}
-                    className="flex items-center gap-2 text-sm text-blue-600 hover:underline"
+                    className="flex items-center gap-2 text-sm text-green-600 hover:text-green-700"
                     >
                     <ArrowLeft size={18} />
                     Back
@@ -105,13 +106,39 @@ const AuthForm = () => {
                         <FormField control={form.control} type="email" name="email" label="Email" placeholder="Enter your email" />                
                     </div>
 
-                    <div>
-                        <FormField control={form.control} type="password" name="password" label="Password" placeholder="Enter your password" />
+                    <div className="relative">
+                        <FormField control={form.control} type={showPassword ? "text" : "password"} name="password" label="password" placeholder="Enter your password" />
+                        <button
+                            type="button"
+                            className='absolute right-3 top-3 transform -translate-y-1/2 text-gray-400 hover:text-gray-600'
+                            onClick={() => setShowPassword((prev) => !prev)}
+                        >
+                            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                        </button>
+
+                        {authState === 'login' && (
+                            <div className="flex justify-end mt-2">
+                                <button
+                                    type="button"
+                                    onClick={() => navigate('/auth/forgot-password')}
+                                    className="text-sm text-blue-500 hover:underline hover:text-blue-600 transition"
+                                >
+                                    Forgot your password?
+                                </button>
+                            </div>
+                        )}
                     </div>
 
                     {authState === 'register' && (
-                        <div>
-                            <FormField control={form.control} type="password" name="confirmPassword" label="Confirm Password" placeholder="Confirm your password" />
+                        <div className="relative">
+                            <FormField control={form.control} type={showConfirmPassword ? "text" : "password"} name="confirmPassword" label="Confirm Password" placeholder="Confirm your password" />
+                            <button
+                                type="button"
+                                className="absolute right-3 top-1 text-gray-400 hover:text-gray-600"
+                                onClick={() => setShowConfirmPassword((prev) => !prev)}
+                            >
+                                {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                            </button>
                         </div>
                     )}
 
@@ -141,7 +168,7 @@ const AuthForm = () => {
                 {authState === 'login' && (  
                     <p className='text-sm text-white mr-2'>
                         Don't have an account?{' '}
-                        <a onClick={() =>{ navigate('/auth-layout/pre')}} className='text-white/55 hover:text-white font-medium underline'>
+                        <a onClick={() =>{ navigate('/auth/role')}} className='text-white/55 hover:text-white font-medium underline'>
                             Sign up
                         </a>
                     </p>
