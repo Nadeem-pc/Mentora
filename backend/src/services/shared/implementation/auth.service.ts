@@ -12,6 +12,8 @@ import { comparePassword, hashPassword } from "@/utils/bcrypt.util";
 import { AuthJwtPayload } from "@/types/jwt-payload";
 import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from "@/utils/jwt.util";
 import { generateNanoId } from "@/utils/generate-nanoid.util";
+import logger from "@/config/logger.config";
+import { env } from "@/config/env.config";
 
 
 export class AuthService implements IAuthService {
@@ -23,12 +25,12 @@ export class AuthService implements IAuthService {
             throw createHttpError(HttpStatus.CONFLICT, HttpResponse.USER_EXIST);
         }
         const otp = generateOTP();
-        console.log("OTP: ", otp);
+        logger.info(`OTP: ${otp}`);
         await sendOtpEmail(user.email, otp);
 
         const response = await redisClient.setEx(
             user.email,
-            300,
+            Number(env.OTP_EXPIRY_SECONDS),
             JSON.stringify({...user, otp})
         );
 
@@ -68,7 +70,7 @@ export class AuthService implements IAuthService {
         const accessToken = generateAccessToken(payload);
         const refreshToken = generateRefreshToken(payload);
 
-        return {user: createdUser, accessToken, refreshToken}
+        return { user: createdUser, accessToken, refreshToken }
     };
 
     resendOtp = async (email: string): Promise<{ success: boolean, message: string }> => {
@@ -77,14 +79,14 @@ export class AuthService implements IAuthService {
 
         const storedData = JSON.parse(storedDataString);
         const newOtp = generateOTP();
-        console.log("New OTP: ", newOtp);
+        logger.info(`NEW OTP: ${newOtp}`);
         
         await sendOtpEmail(email, newOtp);
         
         const updateData = { ...storedData, otp: newOtp };
         await redisClient.setEx(
             email,
-            300,
+            Number(env.OTP_EXPIRY_SECONDS),
             JSON.stringify(updateData)
         );
         return { success: true, message: "OTP resent successfully" };
@@ -119,7 +121,7 @@ export class AuthService implements IAuthService {
             throw createHttpError(HttpStatus.NOT_FOUND, HttpResponse.USER_NOT_FOUND);
         }
         const token = generateNanoId();
-        const storeOnReddis = await redisClient.setEx(token, 900, email);
+        const storeOnReddis = await redisClient.setEx(token, Number(env.RESET_PASSWORD_TOKEN_EXPIRY_SECONDS), email);
 
         if (!storeOnReddis) {
             throw createHttpError(HttpStatus.INTERNAL_SERVER_ERROR, HttpResponse.SERVER_ERROR);
@@ -162,11 +164,11 @@ export class AuthService implements IAuthService {
         return { accessToken, refreshToken };
     };
 
-    // getUser = async (userId: string): Promise<IUserModel> => {
-    //     const user = await this._userRepository.findUserById(userId);
-    //     if (!user) {
-    //         throw createHttpError(HttpStatus.NOT_FOUND, HttpResponse.USER_NOT_FOUND)
-    //     }
-    //     return user;
-    // };
+    getClient = async (clientId: string): Promise<IUserModel> => {
+        const user = await this._userRepository.findUserById(clientId);
+        if (!user) {
+            throw createHttpError(HttpStatus.NOT_FOUND, HttpResponse.USER_NOT_FOUND)
+        }
+        return user;
+    };
 };
