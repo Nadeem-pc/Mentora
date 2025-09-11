@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import { env } from './env.config';
 import dotenv from 'dotenv';
+import logger from './logger.config';
 dotenv.config();
 
 const connectDB = async () => {
@@ -10,10 +11,10 @@ const connectDB = async () => {
             throw new Error("MONGODB_URI is not defined in .env");
         }
         await mongoose.connect(dbURI);
-        console.log("Database connected successfully ❇️");
+        logger.info("Database connected successfully ❇️");
         
     } catch (error) {
-        console.error("Database Connection Error", error);
+        logger.error("Database Connection Error", error);
     }
 };
 
