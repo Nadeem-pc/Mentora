@@ -19,6 +19,7 @@ const AuthLayout: React.FC = () => {
     const location = useLocation();
     const heading = location.pathname === '/auth/role' ? "Select Your Role" 
         : location.pathname === '/auth/forgot-password' ? ""
+        : location.pathname === '/auth/reset-password' ? ""
         : role ?  "Create an account" : "Welcome Back" ;
     const text = !role 
         ? "At Mentora, we're building a space where mental well-being is supported and accessible to all. Whether you're here to seek help or provide it, you're part of a mission to make a real difference."
