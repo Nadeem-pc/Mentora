@@ -1,6 +1,5 @@
 import { model, Schema } from "mongoose";
 import { IUserModel } from "../interface/user.model.interface";
-import { required } from "zod/v4/core/util.cjs";
 
 const userSchema = new Schema<IUserModel>({
     firstName: {
@@ -23,6 +22,16 @@ const userSchema = new Schema<IUserModel>({
         type: String, 
         enum: ["client", "therapist", "admin"],
         default: "client"
+    },
+    phone: {
+        type: String,
+    },
+    gender: {
+        type: String,
+        enum: ['Male', 'Female', 'Other']
+    },
+    dob: {
+        type: String
     },
     status: {
         type: String, 
