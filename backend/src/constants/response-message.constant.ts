@@ -20,6 +20,7 @@ export enum HttpResponse {
     PASSWORD_CHANGE_SUCCESS= "Password reset successful! Please log in with your new password.",
     UNAUTHORIZED= "Unauthorized access!",
     NO_PAYLOAD= "Payload not found",
+    PROFILE_UPDATED = "Profile updated successfully",
     PROFILE_PICTURE_CHANGED= "Profile picture changed successfully",
     LOGOUT_SUCCESS= "User Logout successfully",
     INVALID_ID= "Invalid ID format",
