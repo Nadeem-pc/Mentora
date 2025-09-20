@@ -29,4 +29,6 @@ export const env = {
     AWS_SECRET_ACCESS_KEY: getEnvVar('AWS_SECRET_ACCESS_KEY'),
     AWS_BUCKET_NAME: getEnvVar('AWS_BUCKET_NAME'),
     AWS_REGION: getEnvVar('AWS_REGION'),
+    AWS_PUT_URL_EXPIRY: getEnvVar('AWS_PUT_URL_EXPIRY'),
+    AWS_GET_URL_EXPIRY: getEnvVar('AWS_GET_URL_EXPIRY'),
 };
