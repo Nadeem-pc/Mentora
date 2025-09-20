@@ -1,5 +1,34 @@
 import { createLogger, transports, format } from "winston";
+import 'winston-daily-rotate-file';
 import { env } from "./env.config";
+
+const combinedRotateTransport = new transports.DailyRotateFile({
+    filename: 'logs/combined-%DATE%.log',
+    datePattern: 'YYYY-MM-DD',
+    maxSize: '5m',       
+    maxFiles: '14d',     
+    level: 'info',
+    format: format.combine(
+        format.timestamp({ format: "YYYY-MM-DD HH:mm:ss" }),
+        format.printf(({ level, message, timestamp }) => {
+            return `[${timestamp}] ${level.toUpperCase()}: ${message}`;
+        })
+    )
+});
+
+const errorRotateTransport = new transports.DailyRotateFile({
+    filename: 'logs/error-%DATE%.log',
+    datePattern: 'YYYY-MM-DD',
+    maxSize: '5m',       
+    maxFiles: '14d',     
+    level: 'error',
+    format: format.combine(
+        format.timestamp({ format: "YYYY-MM-DD HH:mm:ss" }),
+        format.printf(({ level, message, timestamp }) => {
+            return `[${timestamp}] ${level.toUpperCase()}: ${message}`;
+        })
+    )
+});
 
 const logger = createLogger({
     level: env.NODE_ENV === "production" ? "info" : "debug",
@@ -15,21 +44,8 @@ const logger = createLogger({
                 })
             ),
         }),
-
-        new transports.File({
-            filename: "logs/error.log",
-            level: "error",
-            format: format.printf(({ level, message, timestamp }) => {
-                return `[${timestamp}] ${level.toUpperCase()}: ${message}`;
-            })
-        }),
-
-        new transports.File({
-            filename: "logs/combined.log",
-            format: format.printf(({ level, message, timestamp }) => {
-                return `[${timestamp}] ${level.toUpperCase()}: ${message}`;
-            })
-        }),
+        combinedRotateTransport,
+        errorRotateTransport
     ],
 });
 
