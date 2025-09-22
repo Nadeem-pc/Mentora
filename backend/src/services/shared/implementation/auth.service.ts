@@ -112,7 +112,7 @@ export class AuthService implements IAuthService {
         const accessToken = generateAccessToken(payload);
         const refreshToken = generateRefreshToken(payload);
 
-        return { accessToken, refreshToken };
+        return { accessToken, refreshToken, user };
     };
 
     forgotPassword = async (email:string): Promise<{ success: boolean, message: string}> => {
