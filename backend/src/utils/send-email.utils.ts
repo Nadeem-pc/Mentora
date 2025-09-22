@@ -166,7 +166,7 @@ export const sendResetPasswordEmail = async (email: string, token: string) => {
                                                                 Security Reminder
                                                             </p>
                                                             <p style="color: #dc2626; margin: 0; font-size: 14px; line-height: 1.5;">
-                                                                This link will expire in 30 minutes for your security. If you didn't request this reset, please ignore this email or contact our support team.
+                                                                This link will expire in 15 minutes for your security. If you didn't request this reset, please ignore this email or contact our support team.
                                                             </p>
                                                         </div>
                                                     </div>
@@ -200,8 +200,7 @@ export const sendResetPasswordEmail = async (email: string, token: string) => {
             `,
         };
 
-        const info = await transporter.sendMail(mailOptions);
-        console.log("Password reset email sent successfully", info.response);
+        await transporter.sendMail(mailOptions);
     } catch (error) {
         console.error(error);
         throw new Error("Error sending reset pass email");
