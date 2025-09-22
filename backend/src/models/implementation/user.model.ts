@@ -37,10 +37,6 @@ const userSchema = new Schema<IUserModel>({
         type: String, 
         default: null 
     },     
-    profileImgKey: { 
-        type: String, 
-        default: null 
-    },   
     status: {
         type: String, 
         enum: ["Active", "Blocked"],

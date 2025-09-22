@@ -11,6 +11,5 @@ export interface IUserModel extends Document{
     gender: string;
     dob: string;
     profileImg?: string | null;     
-    profileImgKey?: string | null; 
     status: string;
 }
