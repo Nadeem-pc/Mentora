@@ -2,7 +2,9 @@ import { Request, Response, NextFunction } from "express";
 import { HttpStatus } from "@/constants/status.constant";
 import { IAuthController } from "../interface/IAuthController";
 import { IAuthService } from "@/services/shared/interface/IAuthService";
-import { setCookie } from "@/utils/refresh-cookie.util";
+import { deleteCookie, setCookie } from "@/utils/refresh-cookie.util";
+import logger from "@/config/logger.config";
+import { HttpResponse } from "@/constants/response-message.constant";
 
 
 export class AuthController implements IAuthController {
@@ -13,7 +15,7 @@ export class AuthController implements IAuthController {
             const result = await this._authService.registerUser(req.body);
             res.status(HttpStatus.OK).json(result);
         } catch (error) {
-            console.error(error);
+            logger.error(error);
             next(error);
         }
     };
@@ -24,7 +26,7 @@ export class AuthController implements IAuthController {
             const result = await this._authService.verifyOtp(email, otp);
             res.status(HttpStatus.CREATED).json(result);
         } catch (error) {
-            console.error(error);
+            logger.error(error);
             next(error);
         }
     };
@@ -35,7 +37,7 @@ export class AuthController implements IAuthController {
             const result = await this._authService.resendOtp(email);
             res.status(HttpStatus.OK).json(result);
         } catch (error) {
-            console.error(error);
+            logger.error(error);
             next(error);
         }
     };
@@ -48,7 +50,7 @@ export class AuthController implements IAuthController {
             setCookie(res, newRefreshToken);
             res.status(HttpStatus.OK).json({ token: accessToken });
         } catch (error) {
-            console.error(error);
+            logger.error(error);
             next(error);
         }
     };
@@ -56,17 +58,32 @@ export class AuthController implements IAuthController {
     login = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
             const { email, password } = req.body;
-            const { accessToken, refreshToken } = await this._authService.login(email, password);
+            const { accessToken, refreshToken, user } = await this._authService.login(email, password);
             setCookie(res, refreshToken);
 
             res.status(HttpStatus.OK).json({ 
                 success: true, 
                 message: "Login successful", 
-                token: accessToken 
+                token: accessToken,
+                user: {
+                    id: user._id,
+                    email: user.email,
+                    role: user.role,
+                }
             });
 
         } catch (error) {
-            console.error(error);
+            logger.error(error);
+            next(error);
+        }
+    };
+
+    logout = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+        try {
+            deleteCookie(res);
+            res.status(HttpStatus.OK).json({ success: true, message: HttpResponse.LOGOUT_SUCCESS });
+        } catch (error) {
+            logger.error(error);
             next(error);
         }
     };
@@ -77,7 +94,7 @@ export class AuthController implements IAuthController {
             const verifyForgotPassword = await this._authService.forgotPassword(email);
             res.status(HttpStatus.OK).json(verifyForgotPassword);
         } catch (error) {
-            console.error(error);
+            logger.error(error);
             next(error);
         }
     };
@@ -88,19 +105,22 @@ export class AuthController implements IAuthController {
             const updateClientPassword = await this._authService.resetPassword(password, token);
             res.status(HttpStatus.OK).json(updateClientPassword);            
         } catch (error) {
-            console.error(error);
+            logger.error(error);
             next(error);
         }
     };
 
     me = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
-            const { id } = JSON.parse(req.headers["x-user-payload"] as string);
-            // const id = req.user?.id;
+            const { id } = (req as any).user;
             const client = await this._authService.getClient(id);
-            res.status(HttpStatus.OK).json(client);
+            res.status(HttpStatus.OK).json({
+                id: client._id,
+                email: client.email,
+                role: client.role
+            });
         } catch (error) {
-            console.error(error);
+            logger.error(error);
             next(error);
         }
     };
