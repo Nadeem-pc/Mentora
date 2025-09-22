@@ -22,7 +22,7 @@ export enum HttpResponse {
     NO_PAYLOAD= "Payload not found",
     PROFILE_UPDATED = "Profile updated successfully",
     PROFILE_PICTURE_CHANGED= "Profile picture changed successfully",
-    LOGOUT_SUCCESS= "User Logout successfully",
+    LOGOUT_SUCCESS= "You have been logged out successfully",
     INVALID_ID= "Invalid ID format",
     TOO_MANY_REQUESTS= "Too many requests, please try again later.",
     INVALID_USER_ID="Invalid user ID format",
