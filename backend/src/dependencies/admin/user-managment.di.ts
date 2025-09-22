@@ -1,5 +1,5 @@
-import { ClientManagmentController } from "@/controllers/admin/implementation/client-management.controller";
+import { UserManagmentController } from "@/controllers/admin/implementation/user-management.controller";
 import { UserRepository } from "@/repositories/implementation/client.repository";
-import { ClientManagmentService } from "@/services/admin/implementation/clientManagment.service";
+import { UserManagmentService } from "@/services/admin/implementation/userManagment.service";
 
-export const clientManagmentController = new ClientManagmentController(new ClientManagmentService(new UserRepository()))
+export const userManagmentController = new UserManagmentController(new UserManagmentService(new UserRepository()));
