@@ -1,7 +1,10 @@
 import express from 'express';
 import cors from 'cors';
-import authRouter from './routes/auth.router';
+import cookieParser from 'cookie-parser';
+import authRouter from './routes/shared/auth.router';
 import { errorHandler } from './middlewares/error-handler.middleware';
+import clientProfileRouter from './routes/client/profile.router';
+import userManagmentRouter from './routes/admin/user-management.router';
 
 export const app = express();
 
@@ -11,8 +14,12 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true
 }));
+
 app.use(express.json());
+app.use(cookieParser());
 
 app.use('/auth', authRouter);
+app.use('/admin', userManagmentRouter);
+app.use('/client', clientProfileRouter);
 
 app.use(errorHandler);
