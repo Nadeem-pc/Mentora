@@ -5,7 +5,6 @@ import Auth from "@/pages/auth";
 import Landing from "@/pages/client/Landing";
 import UnProtectedRoute from "./UnProtectedRoute";
 import OtpForm from "@/components/auth/OtpForm";
-import AdminLayout from "@/layouts/AdminLayout";
 import ClientManagement from "@/pages/admin/ClientManagement";
 import ForgotPassword from "@/components/auth/ForgotPassword";
 import ResetPassword from "@/components/auth/ResetPassword";
@@ -13,9 +12,10 @@ import UserProfilePage from "@/pages/client/Profile";
 import NotFoundPage from "@/pages/shared/PageNotFound";
 import UserDetail from "@/pages/admin/UserDetail";
 import TherapistProfilePage from "@/pages/therapist/Profile";
-import TherapistDashboard from "@/pages/therapist/Dashboard";
 import ProtectedRoute from "./ProtectedRoute";
-import Dashboard from "@/pages/admin/Dashboard";
+import TherapistDashboard from "@/pages/therapist/Dashboard";
+import AdminDashboard from "@/pages/admin/Dashboard";
+import DashboardLayout from "@/layouts/DashboardLayout";
 
 export const router = createBrowserRouter([
     {
@@ -46,10 +46,10 @@ export const router = createBrowserRouter([
     },
 
     {
-        path: '/admin',  element: <ProtectedRoute allowedRoles={['admin']}> <AdminLayout /> </ProtectedRoute>,
+        path: '/admin',  element: <ProtectedRoute allowedRoles={['admin']}> <DashboardLayout /> </ProtectedRoute>,
         children: [
             {
-                path: 'dashboard', element: <Dashboard/>
+                path: 'dashboard', element: <AdminDashboard/>
             },
             {
                 path: 'users', element: <ClientManagement/>
@@ -61,11 +61,17 @@ export const router = createBrowserRouter([
     },
 
     {
-        path: '/therapist/profile', element: <ProtectedRoute allowedRoles={['therapist']}> <TherapistProfilePage/> </ProtectedRoute>
+        path: '/therapist', element: <ProtectedRoute allowedRoles={['therapist']}> <DashboardLayout /> </ProtectedRoute>,
+        children: [
+            {
+                path: 'dashboard', element: <TherapistDashboard/>
+            },
+            {
+                path: 'profile', element: <TherapistProfilePage/>
+            },
+        ]
     },
-    {
-        path: '/therapist/dashboard', element: <ProtectedRoute allowedRoles={['therapist']}> <TherapistDashboard/> </ProtectedRoute>
-    },
+
 
     {
         path: '*', element: <NotFoundPage/>
