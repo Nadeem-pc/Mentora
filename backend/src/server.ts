@@ -4,6 +4,7 @@ import http from 'http';
 
 import connectDb from './config/mongo.config';
 import { connectRedis } from './config/redis.config';
+import logger from "./config/logger.config";
 
 const connectServer = async () => {
     try {
@@ -12,7 +13,7 @@ const connectServer = async () => {
 
         const server = http.createServer(app);
         server.listen(env.PORT, () => {
-            console.log(`Server is Running on PORT ${env.PORT}💡`);
+            logger.info(`Server is Running on PORT ${env.PORT}💡`);
         });
     } catch (error) {
         console.log(error);
