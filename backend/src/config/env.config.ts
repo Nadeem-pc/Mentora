@@ -31,4 +31,6 @@ export const env = {
     AWS_REGION: getEnvVar('AWS_REGION'),
     AWS_PUT_URL_EXPIRY: getEnvVar('AWS_PUT_URL_EXPIRY'),
     AWS_GET_URL_EXPIRY: getEnvVar('AWS_GET_URL_EXPIRY'),
+    LOG_MAX_SIZE: getEnvVar('LOG_MAX_SIZE'),
+    LOG_MAX_FILES: getEnvVar('LOG_MAX_FILES'),
 };
