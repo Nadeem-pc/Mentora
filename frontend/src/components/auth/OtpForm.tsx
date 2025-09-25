@@ -6,8 +6,9 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import type z from 'zod';
 import { Form } from '../ui/form';
 import { toast } from 'sonner';
-import { AuthService } from '@/services/authServices';
+import { AuthService } from '@/services/shared/authServices';
 import { Button } from '../ui/button';
+import { useAuth } from '@/contexts/auth.context';
 
 const OtpForm: React.FC = () => {
     const [otp, setOtp] = useState<string[]>(['', '', '', '']);
@@ -82,6 +83,7 @@ const OtpForm: React.FC = () => {
 
     const navigate = useNavigate();
     const location = useLocation();
+    const { setUser } = useAuth();
     const email:string = location.state;
 
     const form = useForm<z.infer<typeof OtpSchema>>({
@@ -96,10 +98,17 @@ const OtpForm: React.FC = () => {
         try {
             const response = await AuthService.verifyOtp({ email, ...data });
             if(response && response.user && response.accessToken){
-                localStorage.removeItem('role');
                 localStorage.setItem("accessToken", response.accessToken);
-                toast.success('Registration successfull');
-                navigate('/', { replace: true });
+                setUser(response.user);
+                toast.success('Registration successful');
+
+                if(response.user.role === 'client'){
+                    navigate('/', { replace: true });
+                }else{
+                    navigate('/therapist/dashboard', { replace: true });
+                }
+                
+                localStorage.removeItem('role');
             }else{
                 toast.error(response.message || "Failed to resend OTP");
             }
