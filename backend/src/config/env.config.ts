@@ -33,4 +33,5 @@ export const env = {
     AWS_GET_URL_EXPIRY: getEnvVar('AWS_GET_URL_EXPIRY'),
     LOG_MAX_SIZE: getEnvVar('LOG_MAX_SIZE'),
     LOG_MAX_FILES: getEnvVar('LOG_MAX_FILES'),
+    BCRYPT_SALT_ROUNDS: getEnvVar('BCRYPT_SALT_ROUNDS'),
 };
