@@ -5,8 +5,8 @@ import { env } from "./env.config";
 const combinedRotateTransport = new transports.DailyRotateFile({
     filename: 'logs/combined-%DATE%.log',
     datePattern: 'YYYY-MM-DD',
-    maxSize: '5m',       
-    maxFiles: '14d',     
+    maxSize: env.LOG_MAX_SIZE,       
+    maxFiles: env.LOG_MAX_FILES,     
     level: 'info',
     format: format.combine(
         format.timestamp({ format: "YYYY-MM-DD HH:mm:ss" }),
@@ -19,8 +19,8 @@ const combinedRotateTransport = new transports.DailyRotateFile({
 const errorRotateTransport = new transports.DailyRotateFile({
     filename: 'logs/error-%DATE%.log',
     datePattern: 'YYYY-MM-DD',
-    maxSize: '5m',       
-    maxFiles: '14d',     
+    maxSize: env.LOG_MAX_SIZE,       
+    maxFiles: env.LOG_MAX_FILES,     
     level: 'error',
     format: format.combine(
         format.timestamp({ format: "YYYY-MM-DD HH:mm:ss" }),
