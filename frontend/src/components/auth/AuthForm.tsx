@@ -5,22 +5,24 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { Button } from "@/components/ui/button"
 import { Form } from "@/components/ui/form"
-import FormField from "../shared/Formfield"
+import FormField from "../ui/Formfield"
 import { authFormSchema } from "@/schemas/authSchema"
 import { useEffect, useState } from "react"
 import { Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import { useNavigate } from "react-router-dom"
 import { toast } from "sonner"
-import { AuthService } from "@/services/authServices"
+import { AuthService } from "@/services/shared/authServices"
+import { useAuth } from "@/contexts/auth.context"
 
 
 const AuthForm = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-    const navigate = useNavigate();
-
     const [authState, setAuthState] = useState<'login' | 'register'>('login');
     const [role, setRole] = useState<string | null>(null);
+    
+    const navigate = useNavigate();
+    const { login, user } = useAuth();
     
     useEffect(() => {
         const storedRole = localStorage.getItem('role');
@@ -30,6 +32,13 @@ const AuthForm = () => {
         }
     }, []);
 
+    useEffect(() => {
+        if (user) {
+            if (user.role === "admin") navigate('/admin/users', { replace: true });
+            else if (user.role === "therapist") navigate('/therapist/dashboard', { replace: true });
+            else navigate('/', { replace: true });
+        }
+    }, [user, navigate]);
     
     const formSchema = authFormSchema(authState);
     const form = useForm<z.infer<typeof formSchema>>({
@@ -44,18 +53,15 @@ const AuthForm = () => {
         },
     })
 
-
     async function onSubmit(values: z.infer<typeof formSchema>) {
         const { firstName, lastName, email, password } = values;
 
         try {
             if (authState === "login") {
                 const response = await AuthService.login(email, password);
-                if(response.success){
+                if (response.success) {
                     toast.success(response.message);
-                    navigate('/', { replace: true });
-                }else{
-                    toast.error(response.message);
+                    await login(email, password);
                 }
             } else {
                 if(firstName && lastName && role){
@@ -71,7 +77,9 @@ const AuthForm = () => {
         } catch (error) {
             console.log(error);
             const errorMessage = error?.response?.data?.message;
-            toast.error(errorMessage);
+            if (errorMessage) {
+               toast.error(errorMessage);
+            }
         }
     }
 
