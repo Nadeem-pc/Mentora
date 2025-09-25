@@ -25,13 +25,16 @@ const userSchema = new Schema<IUserModel>({
     },
     phone: {
         type: String,
+        default: null 
     },
     gender: {
         type: String,
-        enum: ['Male', 'Female', 'Other']
+        enum: ['Male', 'Female', 'Other'],
+        default: null 
     },
     dob: {
-        type: String
+        type: String,
+        default: null 
     },
     profileImg: { 
         type: String, 
