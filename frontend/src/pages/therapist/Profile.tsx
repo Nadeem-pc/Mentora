@@ -25,6 +25,7 @@ const TherapistProfilePage: React.FC = () => {
   const [profile, setProfile] = useState<TherapistProfile | null>(null);
   const [profileImgUrl, setProfileImgUrl] = useState<string>('');
   const [certificateUrls, setCertificateUrls] = useState<string[]>([]);
+  const [resumeUrl, setResumeUrl] = useState<string>('');
   const [currentCertIndex, setCurrentCertIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -75,6 +76,12 @@ const TherapistProfilePage: React.FC = () => {
           })
         );
         setCertificateUrls(certUrls.filter(url => url !== ''));
+      }
+
+      // Fetch pre-signed URL for resume
+      if (profileData?.resume) {
+        const resumePreSignedUrl = await getPreSignedURL(profileData.resume);
+        setResumeUrl(resumePreSignedUrl);
       }
     } catch (err) {
       console.error('Error fetching profile:', err);
@@ -389,19 +396,19 @@ const TherapistProfilePage: React.FC = () => {
             )}
 
             {/* Resume Download */}
-            {profile.resume && (
+            {resumeUrl && (
               <div className="bg-white rounded-xl shadow p-6">
                 <div className="flex items-center mb-4">
                   <FileText className="w-6 h-6 text-indigo-600 mr-2" />
                   <h3 className="text-xl font-bold text-gray-900">Resume</h3>
                 </div>
                 <a
-                  href={profile.resume}
+                  href={resumeUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="block w-full bg-indigo-600 hover:bg-indigo-700 text-white text-center py-3 rounded-lg font-medium transition-colors"
                 >
-                  Download Resume
+                  View Resume
                 </a>
               </div>
             )}
