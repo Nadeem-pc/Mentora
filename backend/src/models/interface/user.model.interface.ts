@@ -9,7 +9,7 @@ export interface IUserModel extends Document{
     role: string;
     phone: string | null;
     gender: string | null;
-    dob: string | null;
+    dob: string;
     profileImg?: string | null;     
     status: string;
 }
