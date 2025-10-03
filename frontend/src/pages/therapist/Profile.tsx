@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Phone, Calendar, Award, FileText, Languages, Briefcase, User, Loader2, IndianRupee, CheckCircle2, Clock, XCircle, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Phone, Calendar, Award, FileText, Languages, Briefcase, User, Loader2, IndianRupee, CheckCircle2, Clock, XCircle, AlertCircle, ChevronLeft, ChevronRight, Mail } from 'lucide-react';
 import { therapistProfileService } from '@/services/therapist/profileService';
 import { axiosInstance } from '@/config/axios.config';
 
@@ -17,7 +17,7 @@ interface TherapistProfile {
   about: string | null;
   resume: string | null;
   certifications: string[];
-  dob: string | null;
+  email: string;
   approvalStatus: 'Pending' | 'Requested' | 'Approved' | 'Rejected';
 }
 
@@ -91,18 +91,6 @@ const TherapistProfilePage: React.FC = () => {
     }
   };
 
-  const calculateAge = (dob: string | null): number | null => {
-    if (!dob) return null;
-    const birthDate = new Date(dob);
-    const today = new Date();
-    let age = today.getFullYear() - birthDate.getFullYear();
-    const monthDiff = today.getMonth() - birthDate.getMonth();
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-      age--;
-    }
-    return age;
-  };
-
   const nextCertificate = () => {
     setCurrentCertIndex((prev) => 
       prev === certificateUrls.length - 1 ? 0 : prev + 1
@@ -144,7 +132,6 @@ const TherapistProfilePage: React.FC = () => {
 
   const fullName = `${profile.firstName} ${profile.lastName}`;
   const defaultProfileImg = 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=400&h=400&fit=crop';
-  const age = calculateAge(profile.dob);
 
   const getApprovalStatusBadge = () => {
     switch (profile.approvalStatus) {
@@ -249,17 +236,15 @@ const TherapistProfilePage: React.FC = () => {
             </div>
           )}
 
-          {age && (
-            <div className="bg-white rounded-xl shadow p-5 flex items-center space-x-4">
-              <div className="bg-orange-100 p-3 rounded-lg">
-                <Calendar className="w-6 h-6 text-orange-600" />
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Age</p>
-                <p className="font-semibold text-gray-900">{age} years</p>
-              </div>
+          <div className="bg-white rounded-xl shadow p-5 flex items-center space-x-4">
+            <div className="bg-orange-100 p-3 rounded-lg">
+              <IndianRupee className="w-6 h-6 text-orange-600" />
             </div>
-          )}
+            <div>
+              <p className="text-sm text-gray-500">Fee (starts at)</p>
+              <p className="font-semibold text-gray-900">{profile.fee} /-</p>
+            </div>
+          </div>
         </div>
 
         {/* Main Content */}
@@ -368,11 +353,10 @@ const TherapistProfilePage: React.FC = () => {
             {profile.fee && (
               <div className="bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl shadow-lg p-6 text-white">
                 <div className="flex items-center mb-2">
-                  <IndianRupee className="w-6 h-6 mr-2" />
-                  <h3 className="text-lg font-semibold">Consultation Fee</h3>
+                  <Mail className="w-6 h-6 mr-2" />
+                  <h3 className="text-lg font-semibold">Email</h3>
                 </div>
-                <p className="text-sm opacity-90 mb-2">Starts at</p>
-                <p className="text-4xl font-bold">₹{profile.fee}</p>
+                <p className="text-2xl">{profile.email}</p>
                 {/* <p className="text-sm opacity-90 mt-2">per session</p> */}
               </div>
             )}
@@ -410,25 +394,6 @@ const TherapistProfilePage: React.FC = () => {
                 >
                   View Resume
                 </a>
-              </div>
-            )}
-
-            {/* Personal Info */}
-            {profile.dob && (
-              <div className="bg-white rounded-xl shadow p-6">
-                <h3 className="text-xl font-bold text-gray-900 mb-4">Personal Information</h3>
-                <div className="space-y-3">
-                  <div>
-                    <p className="text-sm text-gray-500">Date of Birth</p>
-                    <p className="font-medium text-gray-900">
-                      {new Date(profile.dob).toLocaleDateString('en-IN', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric'
-                      })}
-                    </p>
-                  </div>
-                </div>
               </div>
             )}
           </div>
