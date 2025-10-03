@@ -17,6 +17,7 @@ import AdminDashboard from "@/pages/admin/Dashboard";
 import DashboardLayout from "@/layouts/DashboardLayout";
 import VerificationForm from "@/pages/therapist/VerificationForm";
 import TherapistProfilePage from "@/pages/therapist/Profile";
+import JobApplications from "@/pages/admin/Jobs";
 
 export const router = createBrowserRouter([
     {
@@ -57,6 +58,9 @@ export const router = createBrowserRouter([
             },
             {
                 path: 'users/detail', element: <UserDetail/>
+            },
+            {
+                path: 'job-applications', element: <JobApplications/>
             }
         ]
     },
