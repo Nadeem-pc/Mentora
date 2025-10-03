@@ -11,11 +11,12 @@ import ResetPassword from "@/components/auth/ResetPassword";
 import UserProfilePage from "@/pages/client/Profile";
 import NotFoundPage from "@/pages/shared/PageNotFound";
 import UserDetail from "@/pages/admin/UserDetail";
-import TherapistProfilePage from "@/pages/therapist/Profile";
 import ProtectedRoute from "./ProtectedRoute";
 import TherapistDashboard from "@/pages/therapist/Dashboard";
 import AdminDashboard from "@/pages/admin/Dashboard";
 import DashboardLayout from "@/layouts/DashboardLayout";
+import VerificationForm from "@/pages/therapist/VerificationForm";
+import TherapistProfilePage from "@/pages/therapist/Profile";
 
 export const router = createBrowserRouter([
     {
@@ -67,8 +68,11 @@ export const router = createBrowserRouter([
                 path: 'dashboard', element: <TherapistDashboard/>
             },
             {
-                path: 'profile', element: <TherapistProfilePage/>
+                path: 'profile/verification', element: <VerificationForm/>
             },
+            {
+                path: 'profile', element: <TherapistProfilePage/>
+            }
         ]
     },
 
