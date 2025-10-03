@@ -34,7 +34,6 @@ const userSchema = new Schema<IUserModel>({
     },
     dob: {
         type: String,
-        default: null 
     },
     profileImg: { 
         type: String, 
@@ -45,7 +44,7 @@ const userSchema = new Schema<IUserModel>({
         enum: ["Active", "Blocked"],
         default: "Active"
     },
-}, {timestamps: true});
+}, { timestamps: true,  discriminatorKey: 'role' });
 
 const User = model<IUserModel>("User", userSchema);
 export default User;
