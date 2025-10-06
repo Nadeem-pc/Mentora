@@ -10,4 +10,5 @@ export interface ITherapistModel extends IUserModel {
     resume: string;
     certifications: string[];
     approvalStatus: string;
+    rejectionReason: string;
 };
