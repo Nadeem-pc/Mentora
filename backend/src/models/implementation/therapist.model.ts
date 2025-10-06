@@ -39,6 +39,9 @@ const therapistSchema = new Schema<ITherapistModel>({
         type: String,
         enum: ['Pending', 'Requested', 'Approved', 'Rejected'],
         default: 'Pending'
+    },
+    rejectionReason: {
+        type: String
     }
 }, { timestamps: true });
 
