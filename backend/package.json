@@ -24,6 +24,7 @@
     "nanoid": "^5.1.5",
     "nodemailer": "^7.0.5",
     "redis": "^5.6.0",
+    "stripe": "^19.1.0",
     "winston": "^3.17.0",
     "winston-daily-rotate-file": "^5.0.0",
     "zod": "^4.0.11"
@@ -39,6 +40,7 @@
     "@types/node": "^24.0.7",
     "@types/nodemailer": "^6.4.17",
     "@types/redis": "^4.0.10",
+    "@types/stripe": "^8.0.416",
     "@types/winston": "^2.4.4",
     "eslint": "^9.34.0",
     "eslint-plugin-react": "^7.37.5",
