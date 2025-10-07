@@ -34,4 +34,7 @@ export const env = {
     LOG_MAX_SIZE: getEnvVar('LOG_MAX_SIZE'),
     LOG_MAX_FILES: getEnvVar('LOG_MAX_FILES'),
     BCRYPT_SALT_ROUNDS: getEnvVar('BCRYPT_SALT_ROUNDS'),
+    STRIPE_SECRET_KEY: getEnvVar('STRIPE_SECRET_KEY'),
+    WEBHOOK_SECRET_KEY: getEnvVar('WEBHOOK_SECRET_KEY'),
+    FRONTEND_URL: getEnvVar('FRONTEND_URL'),
 };
