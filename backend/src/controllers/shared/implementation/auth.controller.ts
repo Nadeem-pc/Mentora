@@ -64,7 +64,7 @@ export class AuthController implements IAuthController {
 
             res.status(HttpStatus.OK).json({ 
                 success: true, 
-                message: "Login successful", 
+                message: HttpResponse.LOGIN_SUCCESS, 
                 token: accessToken,
                 user: {
                     id: user._id,
