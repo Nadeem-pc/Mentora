@@ -13,6 +13,7 @@ export class AuthController implements IAuthController {
     registerUser = async (req: Request, res: Response, next: NextFunction): Promise<void> => {    
         try {
             const result = await this._authService.registerUser(req.body);
+            
             res.status(HttpStatus.OK).json(result);
         } catch (error) {
             logger.error(error);
@@ -114,11 +115,18 @@ export class AuthController implements IAuthController {
         try {
             const { id } = (req as any).user;
             const client = await this._authService.getClient(id);
-            res.status(HttpStatus.OK).json({
+
+            const response: any = {
                 id: client._id,
                 email: client.email,
                 role: client.role
-            });
+            };
+
+            if (client.role === 'therapist') {
+                response.approvalStatus = (client as any).approvalStatus;
+            }
+
+            res.status(HttpStatus.OK).json(response);
         } catch (error) {
             logger.error(error);
             next(error);
