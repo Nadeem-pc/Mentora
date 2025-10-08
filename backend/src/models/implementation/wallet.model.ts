@@ -3,7 +3,7 @@ import { IWalletModel } from "../interface/wallet.model.interface";
 
 const walletSchema = new Schema<IWalletModel>({
     ownerId: {
-        type: Schema.Types.ObjectId,
+        type: Schema.Types.Mixed, 
         required: true,
     },
     ownerType: {
