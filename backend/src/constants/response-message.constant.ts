@@ -31,4 +31,7 @@ export enum HttpResponse {
     INVALID_PARENT_COMMENT_ID="Invalid parent comment ID format",
     ACCESS_TOKEN_EXPIRED = "Access Token Expired",
     UNEXPECTED_KEY_FOUND = "Unexpected key found",
+    INVALID_STATUS = 'Invalid status',
+    REJECTION_REASON_NOT_PROVIDED = 'Rejection reason is required when rejecting an application',
+    APPLICATION_NOT_FOUND = "Application Not Found",
 }; 
