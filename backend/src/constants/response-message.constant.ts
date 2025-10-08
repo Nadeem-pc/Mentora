@@ -3,7 +3,9 @@ export enum HttpResponse {
     USER_EXIST= "User already exist",
     PAGE_NOT_FOUND= "Route not found",
     USER_NOT_FOUND= "User not found",
-    USER_BLOCKED = "Your account has been blocked.",
+    USER_ACCOUNT_BLOCKED = "Your account has been blocked.",
+    ADMIN_USER_BLOCK = "User blocked successfully",
+    ADMIN_USER_UNBLOCK = "User unblocked successfully",
     PASSWORD_INCORRECT= "Incorrect password, try again",
     NO_TOKEN= "Token not provided",
     OTP_INCORRECT= "Incorrect otp, Try again",
@@ -28,4 +30,5 @@ export enum HttpResponse {
     INVALID_USER_ID="Invalid user ID format",
     INVALID_PARENT_COMMENT_ID="Invalid parent comment ID format",
     ACCESS_TOKEN_EXPIRED = "Access Token Expired",
+    UNEXPECTED_KEY_FOUND = "Unexpected key found",
 }; 
