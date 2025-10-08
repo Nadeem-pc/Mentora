@@ -3,10 +3,14 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import authRouter from './routes/shared/auth.router';
 import { errorHandler } from './middlewares/error-handler.middleware';
-import clientProfileRouter from './routes/client/profile.router';
-import userManagmentRouter from './routes/admin/user-management.router';
+import adminRouter from './routes/admin/index.router';
+import clientRouter from './routes/client/index.router';
+import therapistRouter from './routes/therapist/index.router';
+import paymentRouter from './routes/client/payment.router';
 
 export const app = express();
+
+app.use('/api/v1/payment/webhook', express.raw({ type: 'application/json' }), paymentRouter);
 
 app.use(cors({
     origin: 'http://localhost:3000',
@@ -19,7 +23,9 @@ app.use(express.json());
 app.use(cookieParser());
 
 app.use('/auth', authRouter);
-app.use('/admin', userManagmentRouter);
-app.use('/client', clientProfileRouter);
+app.use('/admin', adminRouter);
+app.use('/client', clientRouter);
+app.use('/therapist', therapistRouter);
+app.use('/api/v1/payment', paymentRouter);
 
 app.use(errorHandler);

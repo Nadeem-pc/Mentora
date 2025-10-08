@@ -1,5 +1,5 @@
 import { LoadingSpinner } from "@/components/templates/Spinner";
-import { useAuth } from "@/contexts/auth";
+import { useAuth } from "@/contexts/auth.context";
 import { Navigate } from "react-router-dom";
 
 type ProtectedRouteProps = {

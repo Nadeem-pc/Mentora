@@ -1,14 +1,16 @@
-import { AuthService } from '@/services/authServices';
+import { AuthService } from '@/services/shared/authServices';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
 interface User {
   id: string;
   email: string;
   role: string;
+  approvalStatus: string | null;
 }
 
 interface AuthContextProps {
   user: User | null;
+  setUser: (user: User | null) => void; 
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -54,7 +56,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, isAuthenticated: !!user }}>
+    <AuthContext.Provider value={{ user, setUser, loading, login, logout, isAuthenticated: !!user }}>
       {children}
     </AuthContext.Provider>
   );

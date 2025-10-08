@@ -25,13 +25,15 @@ const userSchema = new Schema<IUserModel>({
     },
     phone: {
         type: String,
+        default: null 
     },
     gender: {
         type: String,
-        enum: ['Male', 'Female', 'Other']
+        enum: ['Male', 'Female', 'Other'],
+        default: null 
     },
     dob: {
-        type: String
+        type: String,
     },
     profileImg: { 
         type: String, 
@@ -42,7 +44,7 @@ const userSchema = new Schema<IUserModel>({
         enum: ["Active", "Blocked"],
         default: "Active"
     },
-}, {timestamps: true});
+}, { timestamps: true,  discriminatorKey: 'role' });
 
 const User = model<IUserModel>("User", userSchema);
 export default User;

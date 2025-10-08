@@ -2,12 +2,14 @@ import { NextFunction } from "express-serve-static-core";
 import { HttpStatus } from "@/constants/status.constant";
 import logger from "@/config/logger.config";
 import { IUserManagmentController } from "../interface/IUserManagmentController";
-import { IUserManagmentService } from "@/services/admin/interface/IUserManagment.service";
+import { IUserManagmentService } from "@/services/admin/interface/IUserManagmentService";
+import { Request, Response } from "express";
+import { HttpResponse } from "@/constants/response-message.constant";
 
 export class UserManagmentController implements IUserManagmentController {
-    constructor(private readonly _userManagmentService: IUserManagmentService){}
+    constructor(private readonly _userManagmentService: IUserManagmentService) {};
 
-    listUsers = async (req: Request, res: Response, next: NextFunction) => {
+    listUsers = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
             const { search = "", page = "1", limit = "10", filter = "all" } = req.query;
 
@@ -33,11 +35,11 @@ export class UserManagmentController implements IUserManagmentController {
             const updatedUser = await this._userManagmentService.blockUser(userId);
 
             if (!updatedUser) {
-                res.status(HttpStatus.NOT_FOUND).json({ success: false, message: "User not found" });
+                res.status(HttpStatus.NOT_FOUND).json({ success: false, message: HttpResponse.USER_NOT_FOUND });
                 return;
             }
 
-            res.status(HttpStatus.OK).json({ success: true, message: "User blocked successfully", data: updatedUser });
+            res.status(HttpStatus.OK).json({ success: true, message: HttpResponse.ADMIN_USER_BLOCK, data: updatedUser });
         } catch (error) {
             logger.error(error);
             next(error);
@@ -50,11 +52,11 @@ export class UserManagmentController implements IUserManagmentController {
             const updatedUser = await this._userManagmentService.unblockUser(userId);
 
             if (!updatedUser) {
-                res.status(HttpStatus.NOT_FOUND).json({ success: false, message: "User not found" });
+                res.status(HttpStatus.NOT_FOUND).json({ success: false, message: HttpResponse.USER_NOT_FOUND });
                 return;
             }
 
-            res.status(HttpStatus.OK).json({ success: true, message: "User unblocked successfully", data: updatedUser });
+            res.status(HttpStatus.OK).json({ success: true, message: HttpResponse.ADMIN_USER_UNBLOCK, data: updatedUser });
         } catch (error) {
             logger.error(error);
             next(error);

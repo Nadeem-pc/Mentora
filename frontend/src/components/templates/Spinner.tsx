@@ -14,7 +14,7 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
   };
 
   return (
-    <div className="flex w-screen items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50">
+    <div className="flex w-screen items-center justify-center min-h-screen">
       <div className="relative">
         <div className={`${sizeClasses[size]} relative`}>
           <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-blue-400 border-r-blue-300 animate-spin"></div>

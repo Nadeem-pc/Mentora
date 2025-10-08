@@ -37,7 +37,7 @@ export class ClientProfileController implements IClientProfileController {
             if (!fileName || !type) {
                 return res.status(HttpStatus.BAD_REQUEST).json({
                     success: false,
-                    message: "fileName and type are required"
+                    message: HttpResponse.FILENAME_OR_TYPE_MISSING
                 });
             }
 
@@ -48,7 +48,7 @@ export class ClientProfileController implements IClientProfileController {
             
             res.status(HttpStatus.OK).json({ 
                 success: true,
-                message: 'Presigned URLs generated successfully', 
+                message: HttpResponse.PRESIGNED_URL_GENERATED, 
                 uploadURL, 
                 fileURL 
             });
@@ -66,7 +66,7 @@ export class ClientProfileController implements IClientProfileController {
             if (!key) {
                 return res.status(HttpStatus.BAD_REQUEST).json({
                     success: false,
-                    message: "key is required"
+                    message: HttpResponse.KEY_MISSING
                 });
             }
 
@@ -76,7 +76,7 @@ export class ClientProfileController implements IClientProfileController {
 
             res.status(HttpStatus.OK).json({ 
                 success: true,
-                message: 'Get presigned URL generated successfully', 
+                message: HttpResponse.GET_PRESIGNED_URL_GENERATED, 
                 get_fileURL 
             });
 
@@ -94,7 +94,7 @@ export class ClientProfileController implements IClientProfileController {
             if (!profileImg) {
                 return res.status(HttpStatus.BAD_REQUEST).json({
                     success: false,
-                    message: "No image key provided"
+                    message: HttpResponse.KEY_MISSING
                 });
             }
 
@@ -107,6 +107,34 @@ export class ClientProfileController implements IClientProfileController {
             });
         } catch (error) {
             logger.error("Error updating profile image:", error);
+            next(error);
+        }
+    };
+    
+    getClientAppointments = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+        try {
+            const clientId = req.user?.id;
+            const { status, page = 1, limit = 10 } = req.query;
+            
+            const pageNum = parseInt(page as string);
+            const limitNum = parseInt(limit as string);
+            const skip = (pageNum - 1) * limitNum;
+
+            const appointments = await this._clientProfileService.getClientAppointments(
+                clientId,
+                status as string | undefined,
+                skip,
+                limitNum
+            );
+
+            res.status(HttpStatus.OK).json({ 
+                success: true, 
+                data: appointments,
+                page: pageNum,
+                limit: limitNum
+            });
+        } catch (error) {
+            logger.error("Error fetching client appointments:", error);
             next(error);
         }
     };
