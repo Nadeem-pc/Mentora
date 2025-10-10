@@ -19,6 +19,13 @@ import VerificationForm from "@/pages/therapist/VerificationForm";
 import TherapistProfilePage from "@/pages/therapist/Profile";
 import JobApplications from "@/pages/admin/JobApplications";
 import JobApplicationDetail from "@/pages/admin/JobApplicationDetail";
+import TherapistListing from "@/pages/client/TherapistList";
+import SlotManagement from "@/pages/therapist/SlotManagement";
+import TherapistDetailPage from "@/pages/client/TherapistDetail";
+import SessionBookingPage from "@/pages/client/SessionBooking";
+import TherapistEarnings from "@/pages/therapist/Wallet";
+import PaymentSuccess from "@/pages/client/PaymentSuccess";
+import PaymentCancel from "@/pages/client/PaymentCancel";
 
 export const router = createBrowserRouter([
     {
@@ -46,6 +53,21 @@ export const router = createBrowserRouter([
     },
     {
         path: '/profile',  element: <ProtectedRoute allowedRoles={['client']}> <UserProfilePage /> </ProtectedRoute>
+    },
+    {
+        path: '/therapists', element: <TherapistListing/>
+    },
+    {
+        path: '/therapist/detail', element: <TherapistDetailPage/>
+    },
+    {
+        path: '/book-session', element: <SessionBookingPage/>
+    },
+    {
+        path: '/payment/success', element: <PaymentSuccess/>
+    },
+    {
+        path: '/payment/cancel', element: <PaymentCancel/>
     },
 
     {
@@ -80,6 +102,12 @@ export const router = createBrowserRouter([
             },
             {
                 path: 'profile', element: <TherapistProfilePage/>
+            },
+            {
+                path: 'slots', element: <SlotManagement/>
+            },
+            {
+                path: 'wallet', element: <TherapistEarnings/>
             }
         ]
     },
