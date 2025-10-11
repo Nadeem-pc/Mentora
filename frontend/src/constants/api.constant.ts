@@ -21,4 +21,4 @@ export const API = {
         UPDATE_APPLICATION_STATUS: "/admin/job-applications",
         GET_JOB_APPLICATION_DETAILS: (id: string) => `/admin/job-applications/detail/${id}`,
     }
-}
+};
