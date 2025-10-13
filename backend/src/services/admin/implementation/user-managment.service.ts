@@ -1,6 +1,6 @@
 import { IUserRepository } from "@/repositories/interface/IUserRepository";
 import { IUserModel } from "@/models/interface/user.model.interface";
-import { IUserManagmentService } from "../interface/IUserManagment.service";
+import { IUserManagmentService } from "../interface/IUserManagmentService";
 
 export class UserManagmentService implements IUserManagmentService {
     constructor(private readonly _userRepository: IUserRepository) {};
@@ -23,14 +23,28 @@ export class UserManagmentService implements IUserManagmentService {
         }
 
         if (filter !== 'all') {
-            if (filter === 'active') {
-                query.status = { $regex: /^active$/i };
-            } else if (filter === 'blocked') {
-                query.status = { $regex: /^blocked$/i };
-            } else if (filter === 'therapist') {
-                query.role = { $regex: /^therapist$/i };
-            } else if (filter === 'client') {
-                query.role = { $regex: /^client$/i };
+            const filterParts = filter.split('_');
+            
+            if (filterParts.length === 2) {
+                const [role, status] = filterParts;
+                
+                if (['therapist', 'client'].includes(role)) {
+                    query.role = { $regex: new RegExp(`^${role}$`, 'i') };
+                }
+                
+                if (['active', 'blocked'].includes(status)) {
+                    query.status = { $regex: new RegExp(`^${status}$`, 'i') };
+                }
+            } else {
+                if (filter === 'active') {
+                    query.status = { $regex: /^active$/i };
+                } else if (filter === 'blocked') {
+                    query.status = { $regex: /^blocked$/i };
+                } else if (filter === 'therapist') {
+                    query.role = { $regex: /^therapist$/i };
+                } else if (filter === 'client') {
+                    query.role = { $regex: /^client$/i };
+                }
             }
         }
 
