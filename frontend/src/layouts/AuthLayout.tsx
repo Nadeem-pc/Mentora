@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import background_img from '/signup-background.jpg';
 import { Outlet, useLocation } from 'react-router-dom';
 import { GoogleOAuthProvider } from '@react-oauth/google';
+import { env } from '@/config/env.config';
 
 const AuthLayout: React.FC = () => {
     const [role, setRole] = useState<string | null>(localStorage.getItem('role'));
@@ -30,7 +31,7 @@ const AuthLayout: React.FC = () => {
 
 
     return (
-        <GoogleOAuthProvider clientId="258406381423-al4882pvn77qsr2kos74pqnrmfelnt9g.apps.googleusercontent.com">
+        <GoogleOAuthProvider clientId={env.GOOGLE_CLIENT_ID}>
             <div className='fixed inset-0'>
                 <img 
                     className='hidden md:block h-full w-full object-cover' 
