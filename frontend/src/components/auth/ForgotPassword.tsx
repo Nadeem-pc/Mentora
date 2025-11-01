@@ -1,11 +1,11 @@
 import { Mail, ArrowLeft, CheckCircle } from 'lucide-react';
-import FormField from '../shared/Formfield';
+import FormField from '../ui/Formfield';
 import { useForm } from 'react-hook-form';
 import type z from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { forgotPasswordSchema } from '@/schemas/authSchema';
 import { toast } from 'sonner';
-import { AuthService } from '@/services/authServices';
+import { AuthService } from '@/services/shared/authServices';
 import { useState } from 'react';
 import { Form } from '../ui/form';
 import { useNavigate } from 'react-router-dom';
