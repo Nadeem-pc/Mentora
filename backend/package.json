@@ -6,7 +6,8 @@
     "dev": "nodemon",
     "build": "tsc",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "nodemon dist/server.ts"
+    "start": "nodemon dist/server.ts",
+    "lint": "eslint . --ext .ts,.tsx,.js,.jsx"
   },
   "author": "",
   "license": "ISC",
