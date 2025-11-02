@@ -1,4 +1,5 @@
 import { axiosInstance } from "@/config/axios.config";
+import type { IUser } from "@/types/auth.types";
 
 interface OtpData {
   email: string;
@@ -26,6 +27,17 @@ export const AuthService = {
       role
     });
     return response.data;
+  },
+
+  googleAuth: async (token: string) => {
+    try {
+      const response = await axiosInstance.post("/auth/google-auth", { token }, { withCredentials: true });
+      localStorage.setItem("accessToken", response.data.token);
+      return response.data;
+    } catch (error) {
+      console.error(error);
+      throw error;
+    }
   },
 
   verifyOtp: async (data: OtpData) => {
