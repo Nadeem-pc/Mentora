@@ -1,5 +1,4 @@
 import { axiosInstance } from "@/config/axios.config";
-import type { IUser } from "@/types/auth.types";
 
 interface OtpData {
   email: string;
