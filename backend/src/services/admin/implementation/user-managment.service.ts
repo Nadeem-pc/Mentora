@@ -1,6 +1,9 @@
 import { IUserRepository } from "@/repositories/interface/IUserRepository";
 import { IUserModel } from "@/models/interface/user.model.interface";
 import { IUserManagmentService } from "../interface/IUserManagmentService";
+import { createHttpError } from "@/utils/http-error.util";
+import { HttpStatus } from "@/constants/status.constant";
+import { HttpResponse } from "@/constants/response-message.constant";
 
 export class UserManagmentService implements IUserManagmentService {
     constructor(private readonly _userRepository: IUserRepository) {};
@@ -52,7 +55,7 @@ export class UserManagmentService implements IUserManagmentService {
 
         const [users, total] = await Promise.all([
             this._userRepository.findAll(query, skip, limit),
-            this._userRepository.count(query) 
+            this._userRepository.count(query)  
         ]);
 
         const baseQuery: any = {};
@@ -71,6 +74,18 @@ export class UserManagmentService implements IUserManagmentService {
         ]);
 
         return { users, total, activeCount, blockedCount };
+    };
+
+    getUserDetails = async (userId: string): Promise<IUserModel | null> => {
+        if(!userId){
+            throw createHttpError(HttpStatus.BAD_REQUEST, HttpResponse.INVALID_CREDENTIALS);
+        }
+        const userData = await this._userRepository.findUserById(userId);
+
+        if (!userData) {
+            throw createHttpError(HttpStatus.NOT_FOUND, HttpResponse.USER_NOT_FOUND);
+        }
+        return userData;
     };
 
     blockUser = async (userId: string): Promise<IUserModel | null> => {
