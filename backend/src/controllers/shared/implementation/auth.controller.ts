@@ -89,6 +89,37 @@ export class AuthController implements IAuthController {
         }
     };
 
+    googleAuth = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+        try {
+            const { token, role } = req.body;
+
+            if (!token) {
+                res.status(HttpStatus.BAD_REQUEST).json({
+                    success: false,
+                    message: HttpResponse.NO_TOKEN
+                });
+                return;
+            }
+
+            const { user, accessToken, refreshToken } = await this._authService.googleAuth(token, role);
+            setCookie(res, refreshToken);
+
+            res.status(HttpStatus.OK).json({
+                success: true,
+                message: HttpResponse.GOOGLE_LOGIN_SUCCESS,
+                token: accessToken,
+                user: {
+                    id: user._id,
+                    email: user.email,
+                    role: user.role,
+                }
+            });
+        } catch (error) {
+            logger.error(error);
+            next(error);
+        }
+    };
+
     forgotPassword = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
             const { email } = req.body;
