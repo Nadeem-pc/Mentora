@@ -3,6 +3,7 @@ import { IJobApplicationController } from "../interface/IJobsController";
 import { NextFunction, Request, Response } from "express";
 import logger from "@/config/logger.config";
 import { HttpResponse } from "@/constants/response-message.constant";
+import { HttpStatus } from "@/constants/status.constant";
 
 export class JobApplicationController implements IJobApplicationController {
     constructor(private readonly _jobApplicationService: IJobApplicationService) {};
@@ -43,8 +44,19 @@ export class JobApplicationController implements IJobApplicationController {
                 specializations: result.specializations
             };
 
-            res.status(200).json(response);
+            res.status(HttpStatus.OK).json(response);
             
+        } catch (error) {
+            logger.error(error);
+            next(error);
+        }
+    };
+
+    getApplicationDetails = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+        try {
+            const { applicationId } = req.params;
+            const application = await this._jobApplicationService.getApplicationDetails(applicationId);
+            res.status(HttpStatus.OK).json({ success: true, application });
         } catch (error) {
             logger.error(error);
             next(error);
