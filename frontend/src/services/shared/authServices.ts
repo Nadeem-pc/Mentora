@@ -28,9 +28,9 @@ export const AuthService = {
     return response.data;
   },
 
-  googleAuth: async (token: string) => {
+  googleAuth: async (token: string, role: string | null) => {
     try {
-      const response = await axiosInstance.post("/auth/google-auth", { token }, { withCredentials: true });
+      const response = await axiosInstance.post("/auth/google-auth", { token, role }, { withCredentials: true });
       localStorage.setItem("accessToken", response.data.token);
       return response.data;
     } catch (error) {
