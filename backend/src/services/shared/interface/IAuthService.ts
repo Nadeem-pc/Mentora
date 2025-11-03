@@ -6,6 +6,7 @@ export interface IAuthService {
     verifyOtp(otp: string, email: string): Promise<{ user: IUserModel, accessToken: string, refreshToken: string }>;
     resendOtp(email: string): Promise<{ success:boolean, message:string }>;
     login(email: string, password: string): Promise<{ accessToken:string, refreshToken:string, user: IUserModel }>;
+    googleAuth(token: string, role: string): Promise<{ accessToken:string, refreshToken:string, user: IUserModel }>;
     forgotPassword(email: string): Promise<{ success:boolean, message:string }>;
     resetPassword(password: string, token: string): Promise<{ success:boolean, message:string }>;
     refreshAccessToken(token: string): Promise<{ accessToken: string, refreshToken: string }>;
