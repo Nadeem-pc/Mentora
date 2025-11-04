@@ -1,4 +1,4 @@
-import { IUserModel } from "@/models/interface/user.model.interface";
+import { IUserDTO } from "@/dtos/user.dto";
 
 export interface IUserManagmentService {
     listUsers(
@@ -7,13 +7,15 @@ export interface IUserManagmentService {
         limit: number,
         filter: string
     ): Promise<{
-        users: IUserModel[];
+        users: IUserDTO[];
         total: number;
         activeCount: number;
         blockedCount: number;
     }>;
 
-    blockUser(userId: string): Promise<IUserModel | null>;
+    getUserDetails(userId: string): Promise<IUserDTO>;
 
-    unblockUser(userId: string): Promise<IUserModel | null>;
+    blockUser(userId: string): Promise<IUserDTO | null>;
+
+    unblockUser(userId: string): Promise<IUserDTO | null>;
 }
