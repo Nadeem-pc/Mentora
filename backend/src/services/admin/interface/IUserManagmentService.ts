@@ -1,3 +1,4 @@
+import { IUserListDTO } from "@/dtos/user-list.dto";
 import { IUserDTO } from "@/dtos/user.dto";
 
 export interface IUserManagmentService {
@@ -7,7 +8,7 @@ export interface IUserManagmentService {
         limit: number,
         filter: string
     ): Promise<{
-        users: IUserDTO[];
+        users: IUserListDTO[];
         total: number;
         activeCount: number;
         blockedCount: number;
