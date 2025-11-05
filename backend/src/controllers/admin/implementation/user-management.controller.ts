@@ -20,12 +20,21 @@ export class UserManagmentController implements IUserManagmentController {
                 filter as string
             );
 
-            return res
-            .status(HttpStatus.OK)
-            .json({ success: true, data: users, total, activeCount, blockedCount });
+            return res.status(HttpStatus.OK).json({ success: true, data: users, total, activeCount, blockedCount });
         } catch (err) {
             logger.error(err);
             next(err);
+        }
+    };
+
+    getUserDetails = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+        try {
+            const { userId } = req.params;
+            const user = await this._userManagmentService.getUserDetails(userId);
+            res.status(HttpStatus.OK).json({ success: true, user });
+        } catch (error) {
+            logger.error(error);
+            next(error);
         }
     };
 
