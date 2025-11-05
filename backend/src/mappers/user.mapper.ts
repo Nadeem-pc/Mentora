@@ -1,6 +1,5 @@
 import { IUserModel } from "@/models/interface/user.model.interface";
-import { IUserDTO } from "@/dtos/user.dto";
-import { IUserListDTO } from "@/dtos/user-list.dto";
+import { IUserDTO, IUserListDTO } from "@/dtos/user.dto";
 
 export class UserMapper {
   static toDTO(user: IUserModel): IUserDTO {
@@ -16,7 +15,6 @@ export class UserMapper {
       profileImg: user.profileImg || null,
       status: user.status,
       createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
     };
   }
 
