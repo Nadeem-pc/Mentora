@@ -4,8 +4,7 @@ import { createHttpError } from "@/utils/http-error.util";
 import { HttpStatus } from "@/constants/status.constant";
 import { HttpResponse } from "@/constants/response-message.constant";
 import { UserMapper } from "@/mappers/user.mapper";
-import { IUserDTO } from "@/dtos/user.dto";
-import { IUserListDTO } from "@/dtos/user-list.dto";
+import { IUserDTO, IUserListDTO } from "@/dtos/user.dto";
 
 export class UserManagmentService implements IUserManagmentService {
     constructor(private readonly _userRepository: IUserRepository) {};
