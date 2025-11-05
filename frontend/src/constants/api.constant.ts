@@ -17,8 +17,12 @@ export const API = {
         DELETE_SLOT: (id: string) => `/therapist/slot/${id}`,
     },
     ADMIN: {
+        GET_USERS: "/admin/users",
+        GET_USER_DETAILS: (userId: string) => `/admin/users/${userId}`,
+        BLOCK_USER: (userId: string) => `/admin/users/${userId}/block`,
+        UNBLOCK_USER: (userId: string) => `/admin/users/${userId}/unblock`,
         GET_JOB_APPLICATIONS: "/admin/job-applications",
         UPDATE_APPLICATION_STATUS: "/admin/job-applications",
-        GET_JOB_APPLICATION_DETAILS: (id: string) => `/admin/job-applications/detail/${id}`,
+        GET_JOB_APPLICATION_DETAILS: (applicationId: string) => `/admin/job-applications/${applicationId}`,
     }
 };
