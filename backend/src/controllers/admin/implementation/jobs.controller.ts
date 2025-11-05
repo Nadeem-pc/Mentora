@@ -106,6 +106,13 @@ export class JobApplicationController implements IJobApplicationController {
 
         } catch (error) {
             logger.error('Error updating application status:', error);
+            if (error.statusCode === HttpStatus.CONFLICT) {
+                res.status(HttpStatus.CONFLICT).json({
+                    success: false,
+                    message: error.message || 'Application has already been processed'
+                });
+                return;
+            }
             next(error);
         }
     };
