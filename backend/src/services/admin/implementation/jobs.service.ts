@@ -4,20 +4,17 @@ import { ITherapistModel } from "@/models/interface/therapist.model.interface";
 import { createHttpError } from "@/utils/http-error.util";
 import { HttpStatus } from "@/constants/status.constant";
 import { HttpResponse } from "@/constants/response-message.constant";
-
-interface ApplicationFilters {
-    page: number;
-    limit: number;
-    search: string;
-    status: string;
-    specialization: string;
-    experienceRange: string;
-}
+import { 
+  ApplicationFiltersDTO, 
+  ApplicationsListResponseDTO, 
+  JobApplicationDetailDTO 
+} from "@/dtos/job-application.dto";
+import { JobApplicationMapper } from "@/mappers/job-application.mapper";
 
 export class JobApplicationService implements IJobApplicationService {
-    constructor(private readonly _therapistRepository: ITherapistRepository) {};
+    constructor(private readonly _therapistRepository: ITherapistRepository) {}
 
-    listApplications = async (filters: ApplicationFilters) => {
+    listApplications = async (filters: ApplicationFiltersDTO): Promise<ApplicationsListResponseDTO> => {
         try {
             const { page, limit, search, status, specialization, experienceRange } = filters;
 
@@ -51,7 +48,6 @@ export class JobApplicationService implements IJobApplicationService {
             }
 
             const totalApplications = await this._therapistRepository.countDocuments(query);
-
             const totalPages = Math.ceil(totalApplications / limit) || 1;
             const skip = (page - 1) * limit;
 
@@ -61,7 +57,6 @@ export class JobApplicationService implements IJobApplicationService {
                 limit,
                 { createdAt: -1 }
             );
-
 
             let stats;
             try {
@@ -94,25 +89,8 @@ export class JobApplicationService implements IJobApplicationService {
                 }
             });
 
-            const result = {
-                applications: applications.map(app => ({
-                    _id: app._id?.toString() || '',
-                    applicantName: `${app.firstName || ''} ${app.lastName || ''}`.trim(),
-                    email: app.email || '',
-                    phone: app.phone || 'Not provided',
-                    experience: app.experience || 'Not specified',
-                    appliedDate: app.createdAt || new Date(),
-                    approvalStatus: app.approvalStatus || 'Requested',
-                    specializations: app.specializations || [],
-                    profileImg: app.profileImg || null,
-                    gender: app.gender,
-                    fee: app.fee,
-                    qualification: app.qualification,
-                    languages: app.languages,
-                    about: app.about,
-                    resume: app.resume,
-                    certifications: app.certifications 
-                })),
+            return {
+                applications: JobApplicationMapper.toListDTOs(applications),
                 currentPage: page,
                 totalPages: totalPages,
                 totalApplications: totalApplications,
@@ -121,8 +99,6 @@ export class JobApplicationService implements IJobApplicationService {
                 stats: stats,
                 specializations: ['All', ...Array.from(specializationsSet).sort()]
             };
-
-            return result;
             
         } catch (error) {
             console.error('Error in listApplications service:', error);
@@ -130,16 +106,18 @@ export class JobApplicationService implements IJobApplicationService {
         }
     };
 
-    getApplicationDetails = async (applicationId: string) => {
-        if(!applicationId){
+    getApplicationDetails = async (applicationId: string): Promise<JobApplicationDetailDTO> => {
+        if (!applicationId) {
             throw createHttpError(HttpStatus.BAD_REQUEST, HttpResponse.INVALID_CREDENTIALS);
         }
+        
         const application = await this._therapistRepository.findById(applicationId);
 
         if (!application) {
             throw createHttpError(HttpStatus.NOT_FOUND, HttpResponse.USER_NOT_FOUND);
         }
-        return application;
+        
+        return JobApplicationMapper.toDetailDTO(application);
     };
 
     updateApplicationStatus = async (
