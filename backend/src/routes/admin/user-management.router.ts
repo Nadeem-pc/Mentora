@@ -3,8 +3,9 @@ import { userManagmentController } from "@/dependencies/admin/user-managment.di"
 
 const userManagmentRouter = Router();
 
-userManagmentRouter.get('/clients', userManagmentController.listUsers);
-userManagmentRouter.patch('/clients/:userId/block', userManagmentController.blockUser);
-userManagmentRouter.patch('/clients/:userId/unblock', userManagmentController.unblockUser);
+userManagmentRouter.get('/users', userManagmentController.listUsers);
+userManagmentRouter.get('/users/:userId', userManagmentController.getUserDetails);
+userManagmentRouter.patch('/users/:userId/block', userManagmentController.blockUser);
+userManagmentRouter.patch('/users/:userId/unblock', userManagmentController.unblockUser);
 
 export default userManagmentRouter;
