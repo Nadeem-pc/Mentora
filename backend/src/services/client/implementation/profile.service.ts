@@ -1,6 +1,8 @@
 import { IUserRepository } from "@/repositories/interface/IUserRepository";
+import { IAppointmentRepository } from "@/repositories/interface/IAppointmentRepository";
 import { IClientProfileService } from "../interface/IProfileService";
 import { IUserModel } from "@/models/interface/user.model.interface";
+import { IAppointment } from "@/models/interface/appointment.model.interface";
 import { HttpResponse } from "@/constants/response-message.constant";
 import { getObjectURL, putObjectURl } from "@/config/s3Bucket.config";
 import { HttpStatus } from "@/constants/status.constant";
@@ -8,7 +10,16 @@ import { createHttpError } from "@/utils/http-error.util";
 import logger from "@/config/logger.config";
 
 export class ClientProfileService implements IClientProfileService {
-    constructor(private readonly _clientRepository: IUserRepository) {}
+    private readonly _clientRepository: IUserRepository;
+    private readonly _appointmentRepository?: IAppointmentRepository;
+
+    constructor(
+        clientRepository: IUserRepository,
+        appointmentRepository?: IAppointmentRepository
+    ) {
+        this._clientRepository = clientRepository;
+        this._appointmentRepository = appointmentRepository;
+    }
 
     getClientData = async (clientId: string): Promise<IUserModel | null> => {
         return await this._clientRepository.findUserById(clientId);
@@ -56,6 +67,37 @@ export class ClientProfileService implements IClientProfileService {
         } catch (error) {
             logger.error("Error in updateProfileImage service:", error);
             throw new Error("Failed to update profile image");
+        }
+    };
+
+    getClientAppointments = async (
+        clientId: string, 
+        status?: string,
+        skip?: number,
+        limit?: number
+    ): Promise<IAppointment[]> => {
+        try {
+            if (!this._appointmentRepository) {
+                throw createHttpError(
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Appointment repository not initialized"
+                );
+            }
+
+            let appointments: IAppointment[];
+
+            if (status === 'upcoming') {
+                appointments = await this._appointmentRepository.findUpcomingAppointments(clientId, 'client');
+            } else if (status === 'past') {
+                appointments = await this._appointmentRepository.findPastAppointments(clientId, 'client');
+            } else {
+                appointments = await this._appointmentRepository.findByClientId(clientId, skip, limit);
+            }
+
+            return appointments;
+        } catch (error) {
+            logger.error("Error fetching client appointments:", error);
+            throw error;
         }
     };
 }
