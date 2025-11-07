@@ -12,7 +12,27 @@ export class AppointmentRepository extends BaseRepository<IAppointment> implemen
 
     async createAppointment(data: Partial<IAppointment>): Promise<IAppointment> {
         try {
-            return await this.model.create(data);
+            const appointmentData = {
+                ...data,
+                therapistId: data.therapistId instanceof Types.ObjectId 
+                    ? data.therapistId 
+                    : new Types.ObjectId(data.therapistId as string),
+                clientId: data.clientId instanceof Types.ObjectId 
+                    ? data.clientId 
+                    : new Types.ObjectId(data.clientId as string),
+                slotId: data.slotId instanceof Types.ObjectId 
+                    ? data.slotId 
+                    : new Types.ObjectId(data.slotId as string),
+            };
+
+            if (data.transactionId) {
+                appointmentData.transactionId = data.transactionId instanceof Types.ObjectId
+                    ? data.transactionId
+                    : new Types.ObjectId(data.transactionId as string);
+            }
+
+            const appointment = await this.model.create(appointmentData);
+            return appointment;
         } catch (error) {
             logger.error('Error creating appointment:', error);
             throw new Error("Error creating appointment");
@@ -22,9 +42,8 @@ export class AppointmentRepository extends BaseRepository<IAppointment> implemen
     async findById(id: string): Promise<IAppointment | null> {
         try {
             return await this.model.findById(new Types.ObjectId(id))
-                .populate('therapistId', 'name email')
-                .populate('clientId', 'name email')
-                .populate('slotId');
+                .populate('therapistId', 'firstName lastName email profileImg')
+                .populate('clientId', 'firstName lastName email profileImg');
         } catch (error) {
             logger.error('Error finding appointment by id:', error);
             throw new Error("Error finding appointment");
@@ -35,8 +54,7 @@ export class AppointmentRepository extends BaseRepository<IAppointment> implemen
         try {
             const query = this.model
                 .find({ clientId: new Types.ObjectId(clientId) })
-                .populate('therapistId', 'name email')
-                .populate('slotId')
+                .populate('therapistId', 'firstName lastName email profileImg')
                 .sort({ appointmentDate: -1 });
 
             if (skip !== undefined) query.skip(skip);
@@ -53,8 +71,7 @@ export class AppointmentRepository extends BaseRepository<IAppointment> implemen
         try {
             const query = this.model
                 .find({ therapistId: new Types.ObjectId(therapistId) })
-                .populate('clientId', 'name email')
-                .populate('slotId')
+                .populate('clientId', 'firstName lastName email profileImg')
                 .sort({ appointmentDate: -1 });
 
             if (skip !== undefined) query.skip(skip);
@@ -80,8 +97,7 @@ export class AppointmentRepository extends BaseRepository<IAppointment> implemen
                     appointmentDate: { $gte: currentDate },
                     status: 'scheduled'
                 })
-                .populate(userType === 'client' ? 'therapistId' : 'clientId', 'name email')
-                .populate('slotId')
+                .populate(userType === 'client' ? 'therapistId' : 'clientId', 'firstName lastName email profileImg')
                 .sort({ appointmentDate: 1 })
                 .exec();
         } catch (error) {
@@ -105,8 +121,7 @@ export class AppointmentRepository extends BaseRepository<IAppointment> implemen
                         { status: { $in: ['completed', 'cancelled'] } }
                     ]
                 })
-                .populate(userType === 'client' ? 'therapistId' : 'clientId', 'name email')
-                .populate('slotId')
+                .populate(userType === 'client' ? 'therapistId' : 'clientId', 'firstName lastName email profileImg')
                 .sort({ appointmentDate: -1 })
                 .exec();
         } catch (error) {
@@ -121,7 +136,7 @@ export class AppointmentRepository extends BaseRepository<IAppointment> implemen
         cancelReason?: string
     ): Promise<IAppointment | null> {
         try {
-            const updateData: any = { status };
+            const updateData = { status };
             if (cancelReason) {
                 updateData.cancelReason = cancelReason;
             }
@@ -150,6 +165,52 @@ export class AppointmentRepository extends BaseRepository<IAppointment> implemen
         } catch (error) {
             logger.error('Error checking slot availability:', error);
             throw new Error("Error checking slot availability");
+        }
+    }
+
+    async findByTherapistWithPagination(
+        therapistId: string, 
+        skip: number, 
+        limit: number,
+        status?: string
+    ): Promise<IAppointment[]> {
+        try {
+            const filter = { 
+                therapistId: new Types.ObjectId(therapistId) 
+            };
+
+            if (status && status !== 'all') {
+                filter.status = status;
+            }
+
+            return await this.model
+                .find(filter)
+                .populate('clientId', 'firstName lastName email profileImg')  
+                .populate('slotId', 'startTime modes') 
+                .sort({ appointmentDate: -1, appointmentTime: 1 })  
+                .skip(skip)
+                .limit(limit)
+                .exec();
+        } catch (error) {
+            logger.error('Error finding appointments:', error);
+            throw new Error("Error fetching appointments");
+        }
+    }
+
+    async countByTherapist(therapistId: string, status?: string): Promise<number> {
+        try {
+            const filter = { 
+                therapistId: new Types.ObjectId(therapistId) 
+            };
+
+            if (status && status !== 'all') {
+                filter.status = status;
+            }
+
+            return await this.model.countDocuments(filter).exec();
+        } catch (error) {
+            logger.error('Error counting appointments:', error);
+            throw new Error("Error counting appointments");
         }
     }
 }
