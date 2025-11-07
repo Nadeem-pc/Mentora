@@ -1,5 +1,6 @@
 import { axiosInstance } from "@/config/axios.config";
 import { API } from "@/constants/api.constant";
+import type { ApplicationsResponseDTO, ApplicationDetailResponseDTO } from "@/types/dtos/job.dto";
 
 interface ApplicationFilters {
     page?: number;
@@ -16,7 +17,7 @@ interface UpdateStatusPayload {
 }
 
 export const jobService = {
-    getApplications: async (filters: ApplicationFilters = {}) => {
+    getApplications: async (filters: ApplicationFilters = {}): Promise<ApplicationsResponseDTO> => {
         try {
             const params = new URLSearchParams();
             
@@ -27,7 +28,7 @@ export const jobService = {
             if (filters.specialization) params.append('specialization', filters.specialization);
             if (filters.experienceRange) params.append('experienceRange', filters.experienceRange);
 
-            const response = await axiosInstance.get(
+            const response = await axiosInstance.get<ApplicationsResponseDTO>(
                 `${API.ADMIN.GET_JOB_APPLICATIONS}?${params.toString()}`
             );
             
@@ -38,9 +39,9 @@ export const jobService = {
         }
     },
 
-    getApplicationDetails: async (applicationId: string) => {
+    getApplicationDetails: async (applicationId: string): Promise<ApplicationDetailResponseDTO> => {
         try {
-            const response = await axiosInstance.get(
+            const response = await axiosInstance.get<ApplicationDetailResponseDTO>(
                 API.ADMIN.GET_JOB_APPLICATION_DETAILS(applicationId)
             );
             return response.data;
