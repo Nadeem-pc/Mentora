@@ -20,12 +20,13 @@ import TherapistProfilePage from "@/pages/therapist/Profile";
 import JobApplications from "@/pages/admin/JobApplications";
 import JobApplicationDetail from "@/pages/admin/JobApplicationDetail";
 import TherapistListing from "@/pages/client/TherapistList";
-import SlotManagement from "@/pages/therapist/SlotManagement";
 import TherapistDetailPage from "@/pages/client/TherapistDetail";
-import SessionBookingPage from "@/pages/client/SessionBooking";
 import TherapistEarnings from "@/pages/therapist/Wallet";
 import PaymentSuccess from "@/pages/client/PaymentSuccess";
 import PaymentCancel from "@/pages/client/PaymentCancel";
+import MentalHealthPlatform from "@/pages/client/Home";
+import SlotManagement from "@/pages/therapist/ManageSlots";
+import TherapistAppointments from "@/pages/therapist/Appointments";
 
 export const router = createBrowserRouter([
     {
@@ -51,17 +52,18 @@ export const router = createBrowserRouter([
             },
         ]
     },
+
+    {
+        path: '/client/home', element: <ProtectedRoute allowedRoles={['client']}> <MentalHealthPlatform/> </ProtectedRoute>
+    },
     {
         path: '/profile',  element: <ProtectedRoute allowedRoles={['client']}> <UserProfilePage /> </ProtectedRoute>
     },
     {
-        path: '/therapists', element: <TherapistListing/>
+        path: '/therapists', element: <ProtectedRoute allowedRoles={['client']}> <TherapistListing/> </ProtectedRoute>
     },
     {
-        path: '/therapist/detail', element: <TherapistDetailPage/>
-    },
-    {
-        path: '/book-session', element: <SessionBookingPage/>
+        path: '/therapist/detail/:therapistId', element: <ProtectedRoute allowedRoles={['client']}> <TherapistDetailPage/> </ProtectedRoute>
     },
     {
         path: '/payment/success', element: <PaymentSuccess/>
@@ -80,13 +82,13 @@ export const router = createBrowserRouter([
                 path: 'users', element: <ClientManagement/>
             },
             {
-                path: 'users/detail', element: <UserDetail/>
+                path: 'users/:userId', element: <UserDetail/>
             },
             {
                 path: 'job-applications', element: <JobApplications/>
             },
             {
-                path: 'job-applications/detail', element: <JobApplicationDetail/>
+                path: 'job-applications/:applicationId', element: <JobApplicationDetail/>
             },
         ]
     },
@@ -104,10 +106,13 @@ export const router = createBrowserRouter([
                 path: 'profile', element: <TherapistProfilePage/>
             },
             {
+                path: 'wallet', element: <TherapistEarnings/>
+            },
+            {
                 path: 'slots', element: <SlotManagement/>
             },
             {
-                path: 'wallet', element: <TherapistEarnings/>
+                path: 'appointments', element: <TherapistAppointments/>
             }
         ]
     },
