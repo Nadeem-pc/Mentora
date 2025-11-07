@@ -1,9 +1,9 @@
 import Header from '@/components/admin/Header';
 import Sidebar from '@/components/shared/Sidebar';
 import { adminSidebarConfig } from '@/components/admin/SidebarConfig';
-import { therapistSidebarConfig } from '@/components/therapist/SidebarConfig';
 import React, { useState, useEffect } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
+import { useTherapistSidebarConfig } from '@/components/therapist/SidebarConfig';
 
 const DashboardLayout: React.FC = () => {
   const location = useLocation();
@@ -17,13 +17,13 @@ const DashboardLayout: React.FC = () => {
     return 'admin';
   };
 
-  const sidebarConfigs = {
-    admin: adminSidebarConfig,
-    therapist: therapistSidebarConfig
-  } as const;
-
   const role = getRoleFromPath(location.pathname);
-  const currentConfig = sidebarConfigs[role];
+  let currentConfig;
+  if (role === "admin") {
+    currentConfig = adminSidebarConfig;
+  } else if (role === "therapist") {
+    currentConfig = useTherapistSidebarConfig(); 
+  }
 
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme');

@@ -4,15 +4,27 @@ import { IClientProfileService } from "@/services/client/interface/IProfileServi
 import { IClientProfileController } from "../interface/IProfileController";
 import logger from "@/config/logger.config";
 import { HttpResponse } from "@/constants/response-message.constant";
+import { UserMapper } from "@/mappers/user.mapper";
 
 export class ClientProfileController implements IClientProfileController {
     constructor(private readonly _clientProfileService: IClientProfileService) {}
 
     getClientData = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
-            const clientId = req.user?.id 
+            const clientId = req.user?.id;
             const client = await this._clientProfileService.getClientData(clientId);
-            res.status(HttpStatus.OK).json({ success: true, data: client });
+            
+            if (!client) {
+                res.status(HttpStatus.NOT_FOUND).json({ 
+                    success: false, 
+                    message: HttpResponse.USER_NOT_FOUND 
+                });
+                return;
+            }
+
+            const clientDTO = UserMapper.toProfileDTO(client);
+            
+            res.status(HttpStatus.OK).json({ success: true, data: clientDTO });
         } catch (error) {
             logger.error(error);
             next(error);
@@ -21,9 +33,12 @@ export class ClientProfileController implements IClientProfileController {
 
     updateProfile = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
-            const clientId = req.user?.id 
+            const clientId = req.user?.id;
             await this._clientProfileService.updateProfile(clientId, req.body);
-            res.status(HttpStatus.OK).json({ success: true, message: HttpResponse.PROFILE_UPDATED });
+            res.status(HttpStatus.OK).json({ 
+                success: true, 
+                message: HttpResponse.PROFILE_UPDATED 
+            });
         } catch (error) {
             logger.error(error);
             next(error);
@@ -35,10 +50,11 @@ export class ClientProfileController implements IClientProfileController {
             const { fileName, type } = req.query;
             
             if (!fileName || !type) {
-                return res.status(HttpStatus.BAD_REQUEST).json({
+                res.status(HttpStatus.BAD_REQUEST).json({
                     success: false,
                     message: HttpResponse.FILENAME_OR_TYPE_MISSING
                 });
+                return;
             }
 
             const { uploadURL, fileURL } = await this._clientProfileService.generatePresignedUploadUrl(
@@ -64,10 +80,11 @@ export class ClientProfileController implements IClientProfileController {
             const { key } = req.query;
 
             if (!key) {
-                return res.status(HttpStatus.BAD_REQUEST).json({
+                res.status(HttpStatus.BAD_REQUEST).json({
                     success: false,
                     message: HttpResponse.KEY_MISSING
                 });
+                return;
             }
 
             const get_fileURL = await this._clientProfileService.generatePresignedGetUrl(
@@ -92,10 +109,11 @@ export class ClientProfileController implements IClientProfileController {
             const { profileImg } = req.body;
             
             if (!profileImg) {
-                return res.status(HttpStatus.BAD_REQUEST).json({
+                res.status(HttpStatus.BAD_REQUEST).json({
                     success: false,
                     message: HttpResponse.KEY_MISSING
                 });
+                return;
             }
 
             const result = await this._clientProfileService.updateProfileImage(clientId, profileImg);
@@ -138,4 +156,4 @@ export class ClientProfileController implements IClientProfileController {
             next(error);
         }
     };
-};
+}

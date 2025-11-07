@@ -37,7 +37,7 @@ export class UserRepository extends BaseRepository<IUserModel> implements IUserR
     }
   }
   
-  async findAll(query: any, skip?: number, limit?: number): Promise<IUserModel[]> {
+  async findAll(query, skip?: number, limit?: number): Promise<IUserModel[]> {
     try {
       return this.model.find(query).skip(skip ?? 0).limit(limit ?? 0);
     } catch (error) {
@@ -46,7 +46,7 @@ export class UserRepository extends BaseRepository<IUserModel> implements IUserR
     }
   }
 
-  async count(query: any): Promise<number> {
+  async count(query): Promise<number> {
     try {
       return this.model.countDocuments(query);
     } catch (error) {

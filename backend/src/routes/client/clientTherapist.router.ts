@@ -1,9 +1,13 @@
 import { Router } from "express";
-import { clientTherapistController } from "@/dependencies/client/clientTherapist.di";
+import verifyToken from "@/middlewares/verify-token.middleware";
+import { clientController } from "@/dependencies/client/clientTherapist.di";
 
-const clientTherapistRouter = Router();
+const clientRouter = Router();
+clientRouter.use(verifyToken());
 
-clientTherapistRouter.get('/therapists', clientTherapistController.listTherapists);
-clientTherapistRouter.get('/therapist/:therapistId/slots', clientTherapistController.getTherapistSlots);
+clientRouter.get('/therapists', clientController.getTherapists);
+clientRouter.get('/therapist/:therapistId', clientController.getTherapistDetails);
+clientRouter.get('/therapist/:therapistId/slots', clientController.getTherapistSlots);
+clientRouter.get('/therapist/:therapistId/slots/available', clientController.getAvailableSlots);
 
-export default clientTherapistRouter;
+export default clientRouter;

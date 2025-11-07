@@ -2,14 +2,14 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
-import { AuthContextProvider } from './contexts/auth/index.tsx'
 import { Toaster } from './components/ui/sonner.tsx'
+import { AuthProvider } from './contexts/auth.context.tsx'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <AuthContextProvider>
-      <Toaster />
+    <AuthProvider>
+      <Toaster/>
       <App />
-    </AuthContextProvider>
-  </StrictMode>,
+    </AuthProvider>
+  </StrictMode>
 )

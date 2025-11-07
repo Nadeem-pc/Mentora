@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import background_img from '/signup-background.jpg';
 import { Outlet, useLocation } from 'react-router-dom';
+import { GoogleOAuthProvider } from '@react-oauth/google';
+import { env } from '@/config/env.config';
 
 const AuthLayout: React.FC = () => {
     const [role, setRole] = useState<string | null>(localStorage.getItem('role'));
@@ -29,31 +31,33 @@ const AuthLayout: React.FC = () => {
 
 
     return (
-        <div className='fixed inset-0'>
-            <img 
-                className='hidden md:block h-full w-full object-cover' 
-                src={background_img}
-                alt=""  
-            />
+        <GoogleOAuthProvider clientId={env.GOOGLE_CLIENT_ID}>
+            <div className='fixed inset-0'>
+                <img 
+                    className='hidden md:block h-full w-full object-cover' 
+                    src={background_img}
+                    alt=""  
+                />
 
-            <div className='md:absolute mt-5 md:top-18 md:left-30 max-w-lg md:text-start'>
-                <h1 className='hidden md:block text-2xl md:text-4xl w-full font-semibold text-gray-800 mb-4 leading-tight'>
-                    Welcome to Mentora!
-                </h1>
-                <p className='hidden md:block md:text-sm w-70 md:w-full text-gray-700 leading-relaxed'>
-                    {text}
-                </p>
-            </div>
+                <div className='md:absolute mt-5 md:top-18 md:left-30 max-w-lg md:text-start'>
+                    <h1 className='hidden md:block text-2xl md:text-4xl w-full font-semibold text-gray-800 mb-4 leading-tight'>
+                        Welcome to Mentora!
+                    </h1>
+                    <p className='hidden md:block md:text-sm w-70 md:w-full text-gray-700 leading-relaxed'>
+                        {text}
+                    </p>
+                </div>
 
-            <div className='bg-primary absolute top-0 right-0 h-full w-full md:me-25 md:min-w-[440px] md:max-w-[440px] flex items-center justify-end p-8'>
-                <div className='rounded-lg p-8 max-w-md w-full'>
-                    <div className='mb-8 flex justify-center'>
-                        <h1 className='flex text-2xl text-white mb-2'>{heading}</h1>
-                    </div>
-                    <Outlet context={{ setRole }}/>
-                </div>    
+                <div className='bg-primary absolute top-0 right-0 h-full w-full md:me-25 md:min-w-[440px] md:max-w-[440px] flex items-center justify-end p-8'>
+                    <div className='rounded-lg p-8 max-w-md w-full'>
+                        <div className='mb-8 flex justify-center'>
+                            <h1 className='flex text-2xl text-white mb-2'>{heading}</h1>
+                        </div>
+                        <Outlet context={{ setRole }}/>
+                    </div>    
+                </div>
             </div>
-        </div>
+        </GoogleOAuthProvider>
     );
 };
 

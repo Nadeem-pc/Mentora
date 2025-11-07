@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { Check, Eye, EyeOff } from 'lucide-react';
-import FormField from '../shared/Formfield';
+import FormField from '../ui/Formfield';
 import { FormProvider, useForm } from 'react-hook-form';
 import type z from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { resetPasswordSchema } from '@/schemas/authSchema';
-import { AuthService } from '@/services/authServices';
+import { AuthService } from '@/services/shared/authServices';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 

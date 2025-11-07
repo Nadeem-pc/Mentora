@@ -5,21 +5,21 @@
 
 :root {
   /* Backgrounds */
-  --background: oklch(98.289% 0.02397 167.381); 
+  --background: oklch(98.212% 0.00011 271.152); 
   --card: oklch(0.98 0 0);    
   --popover: oklch(1 0 0);
 
   /* Text Colors */
-  --foreground: oklch(17.931% 0.06372 267.701);  /* dark gray/blue for headings */
+  --foreground: oklch(17.931% 0.06372 267.701); 
   --card-foreground: oklch(0.25 0.05 270);
   --popover-foreground: oklch(0.25 0.05 270);
 
   /* Brand (Primary: Teal ~ #00B3A4) */
-  --primary: oklch(35.21% 0.07284 155.421); /* cyan/teal */
-  --primary-foreground: oklch(1 0 0);  /* text on primary bg = white */
+  --primary: oklch(35.21% 0.07284 155.421); 
+  --primary-foreground: oklch(1 0 0);  
 
   /* Secondary (Buttons/Borders) */
-  --secondary: oklch(0.92 0.02 240); /* very light blue-gray */
+  --secondary: oklch(0.92 0.02 240);
   --secondary-foreground: oklch(0.22 0.05 270); 
 
   /* Accent (Hover/CTA) */

@@ -14,6 +14,7 @@ import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from "@
 import { generateNanoId } from "@/utils/generate-nanoid.util";
 import logger from "@/config/logger.config";
 import { env } from "@/config/env.config";
+import fetchGoogleUser from "@/utils/google-auth.util";
 
 
 export class AuthService implements IAuthService {
@@ -92,14 +93,14 @@ export class AuthService implements IAuthService {
         return { success: true, message: "OTP resent successfully" };
     };
 
-    login = async (email: string, password: string): Promise<{ accessToken: string, refreshToken: string }> => {
+    login = async (email: string, password: string): Promise<{ accessToken: string, refreshToken: string, user: IUserModel }> => {
         const user = await this._userRepository.findByEmail(email);
         if(!user){
             throw createHttpError(HttpStatus.NOT_FOUND, HttpResponse.USER_NOT_FOUND);
         }
 
         if(user.status === 'Blocked'){
-            throw createHttpError(HttpStatus.FORBIDDEN, HttpResponse.USER_BLOCKED);
+            throw createHttpError(HttpStatus.FORBIDDEN, HttpResponse.USER_ACCOUNT_BLOCKED);
         }
 
         const match = await comparePassword(password, user.password as string);
@@ -113,6 +114,48 @@ export class AuthService implements IAuthService {
         const refreshToken = generateRefreshToken(payload);
 
         return { accessToken, refreshToken, user };
+    };
+
+    googleAuth = async (token: string, role: string): Promise<{ accessToken: string, refreshToken: string, user: IUserModel }> => {
+        const googleUser = await fetchGoogleUser(token);
+
+        if(!googleUser) {
+            throw createHttpError(HttpStatus.UNAUTHORIZED, HttpResponse.UNAUTHORIZED);
+        }
+        const userExist = await this._userRepository.findByEmail(googleUser.email);
+
+        if(userExist) {
+            if(userExist.status === 'Blocked'){
+                throw createHttpError(HttpStatus.FORBIDDEN, HttpResponse.USER_ACCOUNT_BLOCKED);
+            }
+
+            const payload = { id: userExist._id, role: userExist.role, email: googleUser.email } as AuthJwtPayload;
+            const accessToken = generateAccessToken(payload);
+            const refreshToken = generateRefreshToken(payload);
+
+            return { accessToken, refreshToken, user: userExist };
+        }
+
+        const newUser = {
+            firstName: googleUser.given_name || googleUser.name?.split(' ')[0] || 'Client',
+            lastName: googleUser.family_name || googleUser.name?.split(' ').slice(1).join(' ') || '',
+            email: googleUser.email,
+            password: await hashPassword(generateNanoId()), 
+            role, 
+        };
+
+        const createdUser = await this._userRepository.createUser(newUser as IUserModel);
+
+        if (!createdUser) {
+            throw createHttpError(HttpStatus.CONFLICT, HttpResponse.USER_CREATION_FAILED);
+        }
+
+        const payload = { id: createdUser._id, role: createdUser.role, email: createdUser.email } as AuthJwtPayload;
+
+        const accessToken = generateAccessToken(payload);
+        const refreshToken = generateRefreshToken(payload);
+
+        return { user: createdUser, accessToken, refreshToken };
     };
 
     forgotPassword = async (email:string): Promise<{ success: boolean, message: string}> => {

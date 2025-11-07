@@ -13,6 +13,7 @@ import { useNavigate } from "react-router-dom"
 import { toast } from "sonner"
 import { AuthService } from "@/services/shared/authServices"
 import { useAuth } from "@/contexts/auth.context"
+import { useGoogleLogin } from '@react-oauth/google'
 
 
 const AuthForm = () => {
@@ -22,7 +23,7 @@ const AuthForm = () => {
     const [role, setRole] = useState<string | null>(null);
     
     const navigate = useNavigate();
-    const { login, user } = useAuth();
+    const { login, user, setUser } = useAuth();
     
     useEffect(() => {
         const storedRole = localStorage.getItem('role');
@@ -30,11 +31,11 @@ const AuthForm = () => {
            setAuthState('register');
            setRole(storedRole);
         }
-    }, []);
+    }, [])
 
     useEffect(() => {
         if (user) {
-            if (user.role === "admin") navigate('/admin/users', { replace: true });
+            if (user.role === "admin") navigate('/admin/dashboard', { replace: true });
             else if (user.role === "therapist") navigate('/therapist/dashboard', { replace: true });
             else navigate('/', { replace: true });
         }
@@ -52,6 +53,29 @@ const AuthForm = () => {
             confirmPassword: "",
         },
     })
+
+    const googleLogin = useGoogleLogin({
+        onSuccess: async (res) => {
+            try {
+                const response = await AuthService.googleAuth(res.access_token, role);
+                if(response.token){
+                    if(role){
+                        localStorage.removeItem('role');
+                    }
+                    toast.success(response.message);
+                    localStorage.setItem("accessToken", response.token);
+                    setUser(response.user);
+                }
+            } catch (error) {
+                console.error("Google login error:", error);
+                toast.error(error?.response?.data?.message || "Google login failed");
+            }
+        },
+        onError: (error) => {
+            console.error("Login Failed: ", error);
+            toast.error("Google login failed");
+        },
+    });
 
     async function onSubmit(values: z.infer<typeof formSchema>) {
         const { firstName, lastName, email, password } = values;
@@ -162,7 +186,10 @@ const AuthForm = () => {
                 <div className='flex-1 border-t border-gray-300'></div>
             </div>
 
-             <button className='w-full bg-white border border-gray-300 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-50 transition duration-200 font-medium text-sm flex items-center justify-center gap-2'>
+            <button 
+                className='w-full bg-white border border-gray-300 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-50 transition duration-200 font-medium text-sm flex items-center justify-center gap-2'
+                onClick={() => googleLogin()}
+            >
                 <svg className="w-5 h-5" viewBox="0 0 24 24">
                     <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
                     <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>

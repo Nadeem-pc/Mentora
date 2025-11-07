@@ -48,11 +48,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = async () => {
     try {
-    await AuthService.logout(); 
-  } finally {
-    localStorage.removeItem("accessToken");
-    setUser(null);
-  }
+      const response = await AuthService.logout(); 
+      return response.data;
+    } catch (err) {
+      console.error("Logout error: ", err);
+      throw err;
+    } finally {
+      localStorage.removeItem("accessToken");
+      setUser(null);
+    }
   };
 
   return (

@@ -1,109 +1,85 @@
 import { Request, Response, NextFunction } from "express";
 import { ISlotController } from "../interface/ISlotController";
-import logger from "@/config/logger.config";
 import { ISlotService } from "@/services/therapist/interface/ISlotService";
+import { HttpStatus } from "@/constants/status.constant";
+import { Types } from "mongoose";
 import { HttpResponse } from "@/constants/response-message.constant";
+import logger from "@/config/logger.config";
 
 export class SlotController implements ISlotController {
-    constructor(private readonly _slotService: ISlotService) {};
+    constructor(private readonly _slotService: ISlotService) {}
 
-    createSlot = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    createWeeklySchedule = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
-            const { startTime, modes, price } = req.body;
-            
-            if (!startTime || !modes || !price) {
-                res.status(400).json({ success: false, message: HttpResponse.MISSING_FIELDS });
-                return;
-            }
+            const therapistId = req.user.id;
+            const { schedule } = req.body;
 
-            if (!Array.isArray(modes) || modes.length === 0) {
-                res.status(400).json({
+            if (!schedule || !Array.isArray(schedule)) {
+                res.status(HttpStatus.BAD_REQUEST).json({
                     success: false,
-                    message: "At least one consultation mode is required"
+                    message: HttpResponse.INVALID_SLOT_DATA
                 });
                 return;
             }
 
-            const validModes = ["Video", "Audio"];
-            const invalidModes = modes.filter(mode => !validModes.includes(mode));
-            
-            if (invalidModes.length > 0) {
-                res.status(400).json({
-                    success: false,
-                    message: `Invalid consultation modes: ${invalidModes.join(', ')}`
-                });
-                return;
-            }
+            const result = await this._slotService.createWeeklySchedule(
+                new Types.ObjectId(therapistId),
+                schedule
+            );
 
-            if (typeof price !== 'number' || price <= 0) {
-                res.status(400).json({
-                    success: false,
-                    message: "Price must be a positive number"
-                });
-                return;
-            }
-
-            const therapistId = (req as any).user?.id || (req as any).user?._id;
-            
-            if (!therapistId) {
-                res.status(401).json({ success: false, message: HttpResponse.UNAUTHORIZED });
-                return;
-            }
-
-            const slot = await this._slotService.createSlot({ therapistId, startTime, modes, price });
-
-            res.status(201).json({ success: true, message: HttpResponse.SLOT_CREATED, data: slot });
+            res.status(HttpStatus.CREATED).json({
+                success: true,
+                message: HttpResponse.SLOT_CREATED,
+                data: result
+            });
         } catch (error) {
             logger.error(error);
             next(error);
         }
     };
 
-    getSlots = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    getWeeklySchedule = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
-            const therapistId = (req as any).user?.id || (req as any).user?._id;
-            
-            if (!therapistId) {
-                res.status(401).json({ success: false, message: HttpResponse.UNAUTHORIZED });
-                return;
-            }
+            const therapistId = req.user.id;
 
-            const slots = await this._slotService.getSlotsByTherapistId(therapistId);
+            const result = await this._slotService.getWeeklySchedule(
+                new Types.ObjectId(therapistId)
+            );
 
-            res.status(200).json({ success: true, message: HttpResponse.SLOTS_RETRIEVED, data: slots });
+            res.status(HttpStatus.OK).json({ success: true, data: result });
+
         } catch (error) {
             logger.error(error);
             next(error);
         }
     };
 
-    deleteSlot = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    updateWeeklySchedule = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
-            const { id } = req.params;
-            
-            if (!id) {
-                res.status(400).json({ success: false, message: HttpResponse.INVALID_ID });
+            const therapistId = req.user.id;
+            const { schedule } = req.body;
+
+            if (!schedule || !Array.isArray(schedule)) {
+                res.status(HttpStatus.BAD_REQUEST).json({
+                    success: false,
+                    message: HttpResponse.INVALID_SLOT_DATA
+                });
                 return;
             }
 
-            const therapistId = (req as any).user?.id || (req as any).user?._id;
-            
-            if (!therapistId) { 
-                res.status(401).json({ success: false, message: HttpResponse.UNAUTHORIZED });
-                return;
-            }
+            const result = await this._slotService.updateWeeklySchedule(
+                new Types.ObjectId(therapistId),
+                schedule
+            );
 
-            const deletedSlot = await this._slotService.deleteSlot(id, therapistId);
-
-            if (!deletedSlot) {
-                res.status(404).json({ success: false });
-                return;
-            }
-
-            res.status(200).json({ success: true, message: HttpResponse.SLOT_DELETED, data: deletedSlot });
+            res.status(HttpStatus.OK).json({
+                success: true,
+                message: HttpResponse.SLOT_EDITED,
+                data: result
+            });
         } catch (error) {
             logger.error(error);
             next(error);
         }
     };
-};
+}

@@ -1,7 +1,7 @@
 import { Document } from "mongoose";
 
 export interface IUserModel extends Document{
-    id: string;
+    _id: string;
     firstName: string;
     lastName: string;
     email: string;
@@ -12,4 +12,6 @@ export interface IUserModel extends Document{
     dob: string;
     profileImg?: string | null;     
     status: string;
+    createdAt: Date;
+    updatedAt: Date;
 }
