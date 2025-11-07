@@ -5,8 +5,8 @@ import verifyToken from "@/middlewares/verify-token.middleware";
 const slotRouter = Router();
 slotRouter.use(verifyToken());
 
-slotRouter.post('/slot', slotController.createSlot);
-slotRouter.get('/slots', slotController.getSlots);
-slotRouter.delete('/slot/:id', slotController.deleteSlot);
+slotRouter.post('/slot', slotController.createWeeklySchedule);
+slotRouter.get('/slot', slotController.getWeeklySchedule);
+slotRouter.put('/slot', slotController.updateWeeklySchedule); 
 
 export default slotRouter;
