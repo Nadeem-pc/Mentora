@@ -1,7 +1,7 @@
-import { NextFunction, Request, Response } from "express";
+import { Request, Response, NextFunction } from "express";
 
 export interface ISlotController {
-    createSlot(req: Request, res: Response, next: NextFunction): Promise<void>;
-    getSlots(req: Request, res: Response, next: NextFunction): Promise<void>;
-    deleteSlot(req: Request, res: Response, next: NextFunction): Promise<void>;
-};
+    createWeeklySchedule(req: Request, res: Response, next: NextFunction): Promise<void>;
+    getWeeklySchedule(req: Request, res: Response, next: NextFunction): Promise<void>;
+    updateWeeklySchedule(req: Request, res: Response, next: NextFunction): Promise<void>;
+}
