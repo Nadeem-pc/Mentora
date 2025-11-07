@@ -13,4 +13,11 @@ export interface IAppointmentRepository {
         cancelReason?: string
     ): Promise<IAppointment | null>;
     findBySlotAndDate(slotId: string, appointmentDate: Date): Promise<IAppointment | null>;
+    findByTherapistWithPagination(
+        therapistId: string, 
+        skip: number, 
+        limit: number, 
+        status?: string
+    ): Promise<IAppointment[]>;
+    countByTherapist(therapistId: string, status?: string): Promise<number>;
 };
