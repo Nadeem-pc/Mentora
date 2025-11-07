@@ -39,8 +39,11 @@ export const HttpResponse = {
     KEY_MISSING : "key is required",
     GET_PRESIGNED_URL_GENERATED : 'Get presigned URL generated successfully',
     THERAPIST_ID_MISSING : "Therapist ID is required",
+    THERAPIST_ID_AND_DATE_REQUIRED: "Therapist ID and date are required",
     MISSING_FIELDS : "Missing required fields",
-    SLOT_CREATED : "Slot created successfully",
+    SLOT_CREATED : "Weekly schedule created successfully",
     SLOT_DELETED : "Slot deleted successfully",
     SLOTS_RETRIEVED : "Slots retrieved successfully",
+    SLOT_EDITED: "Weekly schedule updated successfully",
+    INVALID_SLOT_DATA: "Invalid schedule data",
 }; 
