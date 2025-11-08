@@ -1,4 +1,4 @@
-import Header from '@/components/admin/Header';
+import Header from '@/components/shared/Header';
 import Sidebar from '@/components/shared/Sidebar';
 import { adminSidebarConfig } from '@/components/admin/SidebarConfig';
 import React, { useState, useEffect } from 'react';
