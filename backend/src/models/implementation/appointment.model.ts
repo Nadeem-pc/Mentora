@@ -21,6 +21,15 @@ const appointmentSchema = new Schema<IAppointment>({
         type: Date,
         required: true
     },
+    appointmentTime: { 
+        type: String,
+        required: true
+    },
+    consultationMode: {  
+        type: String,
+        enum: ["video", "audio"],
+        required: true
+    },
     status: {
         type: String,
         enum: ["scheduled", "completed", "cancelled"],
