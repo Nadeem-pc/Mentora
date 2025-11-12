@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import profile_avatar from '../../assets/pngtree-avatar-icon-profile-icon-member-login-vector-isolated-png-image_5247852-removebg-preview.png';
-import { User, Edit3, Camera, Mail, Phone, Calendar, LogOut, X, Clock, Video, CheckCircle, XCircle, CalendarDays, IndianRupee, AlertCircle } from 'lucide-react';
+import { User, Edit3, Camera, Mail, Phone, Calendar, LogOut, Clock, Video, CheckCircle, XCircle, CalendarDays, IndianRupee, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import ImageCropper from '@/components/shared/ImageCropper';
 import { S3BucketUtil } from '@/utils/S3Bucket.util';
@@ -8,6 +8,7 @@ import { AuthService } from '@/services/shared/authServices';
 import { useNavigate } from 'react-router-dom';
 import { clientProfileService, type Appointment } from '@/services/client/profileServices';
 import type { UserProfile } from '@/types/dtos/user.dto';
+import ConfirmationModal from '@/components/shared/Modal';
 
 interface ValidationErrors {
   firstName?: string;
@@ -26,7 +27,8 @@ const UserProfilePage: React.FC = () => {
   const [originalData, setOriginalData] = useState<UserProfile | null>(null);
   const [cropperImage, setCropperImage] = useState<string | null>(null);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
-  const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
   const [isSaving, setIsSaving] = useState(false);
   
@@ -161,7 +163,6 @@ const UserProfilePage: React.FC = () => {
     const errors: ValidationErrors = {};
     let isValid = true;
 
-    // Validate each field
     const fieldsToValidate: (keyof ValidationErrors)[] = ['firstName', 'lastName', 'email', 'phone', 'gender', 'dob'];
     
     fieldsToValidate.forEach((field) => {
@@ -177,7 +178,6 @@ const UserProfilePage: React.FC = () => {
   };
 
   const validateImageFile = (file: File): { valid: boolean; error?: string } => {
-    // Check file type
     const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
     if (!validTypes.includes(file.type)) {
       return { valid: false, error: 'Please select a valid image file (JPEG, PNG, or WebP)' };
@@ -257,7 +257,6 @@ const UserProfilePage: React.FC = () => {
   };
 
   const handleBlur = (field: string, value: string) => {
-    // Validate on blur
     const error = validateField(field, value);
     if (error) {
       setValidationErrors((prev) => ({
@@ -286,7 +285,6 @@ const UserProfilePage: React.FC = () => {
     try {
       if (!formData || isSaving) return;
       
-      // Validate all fields
       if (!validateAllFields()) {
         toast.error("Please fix all validation errors before saving");
         return;
@@ -325,23 +323,27 @@ const UserProfilePage: React.FC = () => {
     setValidationErrors({});
   };
 
-  const handleLogout = async () => {
+  const handleLogoutConfirm = async () => {
+    setIsLoggingOut(true);
     try {
       const response = await AuthService.logout();
       localStorage.removeItem("accessToken");
-      setShowLogoutModal(false);
       navigate("/auth/form", { replace: true });
       toast.success(response.data.message);
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error during logout:", error);
       const errorMessage = error.response?.data?.message || "Failed to logout";
       toast.error(errorMessage);
     }
   };
 
-  const handleMenuItemClick = (item: any) => {
+  const handleLogoutCancel = () => {
+    setIsLogoutModalOpen(false);
+  };
+
+  const handleMenuItemClick = (item) => {
     if (item.label === 'Logout') {
-      setShowLogoutModal(true);
+      setIsLogoutModalOpen(true)
     } else {
       setActiveSection(item.label);
     }
@@ -566,50 +568,6 @@ const UserProfilePage: React.FC = () => {
           onCropComplete={handleCropComplete}
           onCancel={handleCropCancel}
         />
-      )}
-
-      {showLogoutModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 bg-opacity-50 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4 transform transition-all">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-2xl font-bold text-gray-900">Confirm Logout</h3>
-              <button 
-                onClick={() => setShowLogoutModal(false)}
-                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-              >
-                <X className="w-5 h-5 text-gray-500" />
-              </button>
-            </div>
-            
-            <div className="mb-8">
-              <div className="flex items-center mb-4">
-                <div className="bg-red-100 p-3 rounded-full">
-                  <LogOut className="w-6 h-6 text-red-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-gray-700 text-lg">
-                    Are you sure you want to logout?
-                  </p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="flex space-x-4">
-              <button 
-                onClick={() => setShowLogoutModal(false)}
-                className="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-all duration-200 font-semibold"
-              >
-                Cancel
-              </button>
-              <button 
-                onClick={handleLogout}
-                className="flex-1 px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl hover:from-red-600 hover:to-red-700 transition-all duration-200 font-semibold shadow-lg hover:shadow-xl"
-              >
-                Logout
-              </button>
-            </div>
-          </div>
-        </div>
       )}
 
       <div className="bg-primary px-8 py-12 relative overflow-hidden">
@@ -956,6 +914,30 @@ const UserProfilePage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      <ConfirmationModal
+        isOpen={isLogoutModalOpen}
+        onClose={handleLogoutCancel}
+        title="Confirm Logout"
+        description="Are you sure you want to logout? You will need to sign in again to access your account."
+        icon={<LogOut className="w-6 h-6" />}
+        variant="warning"
+        size="md"
+        confirmButton={{
+          label: "Logout",
+          variant: "danger",
+          onClick: handleLogoutConfirm,
+          loading: isLoggingOut
+        }}
+        cancelButton={{
+          label: "Cancel",
+          variant: "secondary",
+          onClick: handleLogoutCancel,
+          disabled: isLoggingOut
+        }}
+        closeOnOutsideClick={!isLoggingOut}
+        preventCloseWhileLoading={true}
+      />
     </div>
   );
 };
