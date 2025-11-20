@@ -5,4 +5,5 @@ export interface ITherapistProfileController {
     updateProfile(req: Request, res: Response, next: NextFunction): Promise<void>;
     preSignedURL(req: Request, res: Response, next: NextFunction): Promise<void>;
     getPreSignedURL(req: Request, res: Response, next: NextFunction): Promise<void>;
+    getApprovalStatus(req: Request, res: Response, next: NextFunction): Promise<void>;
 };
