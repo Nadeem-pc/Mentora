@@ -5,8 +5,8 @@ export interface IUser {
     email: string,
     password: string;
     status: "Active" | "Blocked";
-    role: "User" | "Therapist";
-    dateOfBirth?: Date;
+    role: "Client" | "Therapist" | "Admin";
+    dob?: Date;
     accessToken: string,
     isAuthenticated: boolean
 }

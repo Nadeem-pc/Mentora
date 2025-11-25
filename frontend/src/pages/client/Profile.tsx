@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import profile_avatar from '../../assets/pngtree-avatar-icon-profile-icon-member-login-vector-isolated-png-image_5247852-removebg-preview.png';
-import { User, Edit3, Camera, Mail, Phone, Calendar, LogOut, Clock, Video, CheckCircle, XCircle, CalendarDays, IndianRupee, AlertCircle } from 'lucide-react';
+import { User, Edit3, Camera, Mail, Phone, Calendar, LogOut, X, Clock, Video, CheckCircle, XCircle, CalendarDays, IndianRupee, AlertCircle, Ban } from 'lucide-react';
 import { toast } from 'sonner';
 import ImageCropper from '@/components/shared/ImageCropper';
 import { S3BucketUtil } from '@/utils/S3Bucket.util';
@@ -27,16 +27,92 @@ const UserProfilePage: React.FC = () => {
   const [originalData, setOriginalData] = useState<UserProfile | null>(null);
   const [cropperImage, setCropperImage] = useState<string | null>(null);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
-  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
   const [isSaving, setIsSaving] = useState(false);
   
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [isLoadingAppointments, setIsLoadingAppointments] = useState(false);
   const [appointmentFilter, setAppointmentFilter] = useState<'all' | 'upcoming' | 'past'>('all');
+  
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
+  const [selectedCancelReason, setSelectedCancelReason] = useState('');
+  const [customCancelReason, setCustomCancelReason] = useState('');
+  const [isCancelling, setIsCancelling] = useState(false);
 
   const navigate = useNavigate();
+
+  const cancelReasons = [
+    'Personal emergency',
+    'Feeling better / No longer needed',
+    'Financial reasons',
+    'Found another therapist',
+    'Other'
+  ];
+
+  const handleCancelClick = (appointment: Appointment) => {
+    setSelectedAppointment(appointment);
+    setSelectedCancelReason('');
+    setCustomCancelReason('');
+    setShowCancelModal(true);
+  };
+
+  const handleCancelModalClose = () => {
+    if (!isCancelling) {
+      setShowCancelModal(false);
+      setSelectedAppointment(null);
+      setSelectedCancelReason('');
+      setCustomCancelReason('');
+    }
+  };
+
+  const handleConfirmCancel = async () => {
+    if (!selectedCancelReason) {
+      toast.error('Please select a reason for cancellation');
+      return;
+    }
+
+    if (!selectedAppointment) return;
+
+    try {
+      setIsCancelling(true);
+      
+      const finalReason = customCancelReason.trim() 
+        ? `${selectedCancelReason}: ${customCancelReason.trim()}`
+        : selectedCancelReason;
+
+      const response = await clientProfileService.cancelAppointment(
+        selectedAppointment._id, 
+        finalReason
+      );
+      
+      if (response.success) {
+        // Update the appointments list
+        setAppointments(prev => 
+          prev.map(apt => 
+            apt._id === selectedAppointment._id 
+              ? { ...apt, status: 'cancelled', cancelReason: finalReason }
+              : apt
+          )
+        );
+
+        // Show success message with refund info if available
+        const message = response.refundAmount 
+          ? `Appointment cancelled successfully. ₹${response.refundAmount} has been refunded to your wallet.`
+          : 'Appointment cancelled successfully';
+        
+        toast.success(message);
+        handleCancelModalClose();
+      }
+    } catch (error: any) {
+      console.error('Error cancelling appointment:', error);
+      const errorMessage = error.response?.data?.message || 'Failed to cancel appointment';
+      toast.error(errorMessage);
+    } finally {
+      setIsCancelling(false);
+    }
+  };
 
   const validateEmail = (email: string): string | undefined => {
     if (!email || email.trim() === '') {
@@ -57,7 +133,7 @@ const UserProfilePage: React.FC = () => {
       return 'Phone number is required';
     }
     const cleanPhone = phone.replace(/[\s-]/g, '');
-    const phoneRegex = /^[6-9]\d{9}$/; // Indian phone number format
+    const phoneRegex = /^[6-9]\d{9}$/;
     if (!phoneRegex.test(cleanPhone)) {
       return 'Please enter a valid 10-digit phone number starting with 6-9';
     }
@@ -183,14 +259,12 @@ const UserProfilePage: React.FC = () => {
       return { valid: false, error: 'Please select a valid image file (JPEG, PNG, or WebP)' };
     }
 
-    // Check file size (5MB limit)
     const maxSize = 5 * 1024 * 1024;
     if (file.size > maxSize) {
       return { valid: false, error: 'Image size must be less than 5MB' };
     }
 
-    // Check minimum size (to avoid tiny images)
-    const minSize = 1024; // 1KB
+    const minSize = 1024;
     if (file.size < minSize) {
       return { valid: false, error: 'Image file is too small' };
     }
@@ -246,7 +320,6 @@ const UserProfilePage: React.FC = () => {
   const handleChange = (field: string, value: string) => {
     setFormData((prev) => prev ? { ...prev, [field]: value } : null);
     
-    // Clear validation error for this field when user starts typing
     if (validationErrors[field as keyof ValidationErrors]) {
       setValidationErrors((prev) => {
         const newErrors = { ...prev };
@@ -323,27 +396,23 @@ const UserProfilePage: React.FC = () => {
     setValidationErrors({});
   };
 
-  const handleLogoutConfirm = async () => {
-    setIsLoggingOut(true);
+  const handleLogout = async () => {
     try {
       const response = await AuthService.logout();
       localStorage.removeItem("accessToken");
+      setShowLogoutModal(false);
       navigate("/auth/form", { replace: true });
       toast.success(response.data.message);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error during logout:", error);
       const errorMessage = error.response?.data?.message || "Failed to logout";
       toast.error(errorMessage);
     }
   };
 
-  const handleLogoutCancel = () => {
-    setIsLogoutModalOpen(false);
-  };
-
-  const handleMenuItemClick = (item) => {
+  const handleMenuItemClick = (item: any) => {
     if (item.label === 'Logout') {
-      setIsLogoutModalOpen(true)
+      setShowLogoutModal(true);
     } else {
       setActiveSection(item.label);
     }
@@ -568,6 +637,50 @@ const UserProfilePage: React.FC = () => {
           onCropComplete={handleCropComplete}
           onCancel={handleCropCancel}
         />
+      )}
+
+      {showLogoutModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 bg-opacity-50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4 transform transition-all">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-2xl font-bold text-gray-900">Confirm Logout</h3>
+              <button 
+                onClick={() => setShowLogoutModal(false)}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+            
+            <div className="mb-8">
+              <div className="flex items-center mb-4">
+                <div className="bg-red-100 p-3 rounded-full">
+                  <LogOut className="w-6 h-6 text-red-600" />
+                </div>
+                <div className="ml-4">
+                  <p className="text-gray-700 text-lg">
+                    Are you sure you want to logout?
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex space-x-4">
+              <button 
+                onClick={() => setShowLogoutModal(false)}
+                className="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-all duration-200 font-semibold"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleLogout}
+                className="flex-1 px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl hover:from-red-600 hover:to-red-700 transition-all duration-200 font-semibold shadow-lg hover:shadow-xl"
+              >
+                Logout
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       <div className="bg-primary px-8 py-12 relative overflow-hidden">
@@ -900,8 +1013,18 @@ const UserProfilePage: React.FC = () => {
                             </div>
                           </div>
                           
-                          <div className="ml-4">
+                          <div className="ml-4 flex flex-col space-y-2">
                             {getStatusBadge(appointment.status)}
+                            
+                            {appointment.status === 'scheduled' && (
+                              <button
+                                onClick={() => handleCancelClick(appointment)}
+                                className="flex items-center space-x-1 px-3 py-1 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg text-sm font-semibold transition-all border border-red-200"
+                              >
+                                <Ban className="w-4 h-4" />
+                                <span>Cancel</span>
+                              </button>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -915,29 +1038,79 @@ const UserProfilePage: React.FC = () => {
         </div>
       </div>
 
+      {/* Cancel Appointment Modal */}
       <ConfirmationModal
-        isOpen={isLogoutModalOpen}
-        onClose={handleLogoutCancel}
-        title="Confirm Logout"
-        description="Are you sure you want to logout? You will need to sign in again to access your account."
-        icon={<LogOut className="w-6 h-6" />}
-        variant="warning"
-        size="md"
+        isOpen={showCancelModal}
+        onClose={handleCancelModalClose}
+        title="Cancel Appointment"
+        icon={<Ban className="w-6 h-6" />}
+        variant="danger"
+        size="lg"
         confirmButton={{
-          label: "Logout",
-          variant: "danger",
-          onClick: handleLogoutConfirm,
-          loading: isLoggingOut
+          label: 'Confirm Cancellation',
+          variant: 'danger',
+          onClick: handleConfirmCancel,
+          disabled: !selectedCancelReason,
+          loading: isCancelling
         }}
         cancelButton={{
-          label: "Cancel",
-          variant: "secondary",
-          onClick: handleLogoutCancel,
-          disabled: isLoggingOut
+          label: 'Keep Appointment',
+          variant: 'secondary',
+          onClick: handleCancelModalClose
         }}
-        closeOnOutsideClick={!isLoggingOut}
+        closeOnOutsideClick={!isCancelling}
         preventCloseWhileLoading={true}
-      />
+      >
+        <div className="space-y-4">
+          <p className="text-gray-700 font-medium">
+            Please select a reason for cancellation:
+          </p>
+          
+          <div className="space-y-2">
+            {cancelReasons.map((reason) => (
+              <label
+                key={reason}
+                className={`flex items-center p-3 border-2 rounded-lg cursor-pointer transition-all ${
+                  selectedCancelReason === reason
+                    ? 'border-red-500 bg-red-50'
+                    : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="cancelReason"
+                  value={reason}
+                  checked={selectedCancelReason === reason}
+                  onChange={(e) => setSelectedCancelReason(e.target.value)}
+                  className="w-4 h-4 text-red-600 focus:ring-red-500"
+                  disabled={isCancelling}
+                />
+                <span className="ml-3 text-sm font-medium text-gray-700">
+                  {reason}
+                </span>
+              </label>
+            ))}
+          </div>
+
+          <div className="mt-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Additional details (optional)
+            </label>
+            <textarea
+              value={customCancelReason}
+              onChange={(e) => setCustomCancelReason(e.target.value)}
+              placeholder="Please provide more details about your cancellation..."
+              rows={3}
+              maxLength={200}
+              disabled={isCancelling}
+              className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-400 transition-all resize-none disabled:opacity-50 disabled:cursor-not-allowed"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              {customCancelReason.length}/200 characters
+            </p>
+          </div>
+        </div>
+      </ConfirmationModal>
     </div>
   );
 };

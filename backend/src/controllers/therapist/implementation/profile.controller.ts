@@ -87,4 +87,29 @@ export class TherapistProfileController implements ITherapistProfileController {
             next(error);
         }
     };
+
+
+    getApprovalStatus = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+        try {
+            const therapistId = req.user?.id;
+            
+            if (!therapistId) {
+                res.status(HttpStatus.UNAUTHORIZED).json({ 
+                    success: false, 
+                    message: HttpResponse.UNAUTHORIZED 
+                });
+                return;
+            }
+
+            const approvalStatus = await this._therapistProfileService.getApprovalStatus(therapistId);
+            
+            res.status(HttpStatus.OK).json({ 
+                success: true, 
+                approvalStatus 
+            });
+        } catch (error) {
+            logger.error(error);
+            next(error);
+        }
+    };
 }

@@ -50,7 +50,7 @@ const appointmentSchema = new Schema<IAppointment>({
     },
     cancelReason: {
         type: String,
-        maxlength: 500
+        maxlength: 200
     }
 }, { timestamps: true });
 

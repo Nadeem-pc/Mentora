@@ -7,10 +7,22 @@ export interface IClientProfileService {
     updateProfileImage(clientId: string, fileKey: string): Promise<{ imageUrl: string }>;
     generatePresignedUploadUrl(fileName: string, fileType: string): Promise<{ uploadURL: string; fileURL: string }>;
     generatePresignedGetUrl(fileName: string): Promise<string>;
+    
     getClientAppointments(
         clientId: string,
         status?: string,
         skip?: number,
         limit?: number
     ): Promise<IAppointment[]>;
+
+    cancelAppointment(
+        clientId: string, 
+        appointmentId: string, 
+        cancelReason: string
+    ): Promise<{
+        success: boolean;
+        message: string;
+        refundAmount: number;
+        refundPercentage: number;
+    }>;
 };

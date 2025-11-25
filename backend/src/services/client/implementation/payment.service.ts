@@ -6,6 +6,7 @@ import { IAppointmentRepository } from "@/repositories/interface/IAppointmentRep
 import Stripe from 'stripe';
 import logger from "@/config/logger.config";
 import { env } from "@/config/env.config";
+import { Types } from "mongoose";
 
 const stripe = new Stripe(env.STRIPE_SECRET_KEY!);
 
@@ -18,30 +19,48 @@ export class PaymentService implements IPaymentService {
     ) {}
 
     async createCheckoutSession(
-        slotId: string,
         therapistId: string,
         userId: string,
         consultationMode: string,
         selectedDate: string,
-        selectedTime: string
+        selectedTime: string,
+        price: number
     ): Promise<{ sessionId: string; url: string | null }> {
         try {
-            const slot = await this._slotRepository.findById(slotId);
-            
+            const weeklySchedule = await this._slotRepository.getWeeklyScheduleByTherapistId(
+                new Types.ObjectId(therapistId)
+            );
+
+            if (!weeklySchedule || !weeklySchedule.schedule) {
+                throw new Error('Therapist schedule not found');
+            }
+
+            const date = new Date(selectedDate);
+            const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+            const dayOfWeek = days[date.getDay()];
+
+            const daySchedule = weeklySchedule.schedule.find((d: any) => d.day === dayOfWeek);
+            if (!daySchedule) {
+                throw new Error('No schedule found for this day');
+            }
+
+            const slot = daySchedule.slots.find((s: any) => s.startTime === selectedTime);
             if (!slot) {
-                logger.error('Slot not found:', slotId);
-                throw new Error('Slot not found');
+                throw new Error('Slot not found in schedule');
             }
 
-            if (slot.therapistId.toString() !== therapistId) {
-                logger.error('Slot therapist mismatch:', {
-                    slotTherapistId: slot.therapistId.toString(),
-                    providedTherapistId: therapistId
-                });
-                throw new Error('Invalid slot for this therapist');
+            const slotId = slot._id.toString();
+
+            const normalizedModes = slot.modes.map((m: string) => m.toLowerCase());
+            if (!normalizedModes.includes(consultationMode.toLowerCase())) {
+                throw new Error('Selected consultation mode not available for this slot');
             }
 
-            const amount = slot.fees;
+            if (slot.price !== price) {
+                logger.warn('Price mismatch:', { slotPrice: slot.price, providedPrice: price });
+            }
+
+            const amount = slot.price;
 
             const session = await stripe.checkout.sessions.create({
                 payment_method_types: ['card'],
@@ -83,13 +102,14 @@ export class PaymentService implements IPaymentService {
     }
 
     async handleWebhook(body: Buffer, signature: string): Promise<{ received: boolean }> {
+        let event: Stripe.Event;
+
         try {
-            const event = stripe.webhooks.constructEvent(
+            event = stripe.webhooks.constructEvent(
                 body,
                 signature,
                 env.WEBHOOK_SECRET_KEY!
             );
-            console.log(event);
             
             if (event.type === 'checkout.session.completed') {
                 const session = event.data.object as Stripe.Checkout.Session;
@@ -98,17 +118,24 @@ export class PaymentService implements IPaymentService {
 
             return { received: true };
         } catch (error) {
-            logger.error('Webhook error:', error);
+            logger.error('Error message:', error instanceof Error ? error.message : 'Unknown error');
+            logger.error('Error stack:', error instanceof Error ? error.stack : 'No stack');
             throw error;
         }
     }
 
     async fulfillOrder(session: Stripe.Checkout.Session): Promise<void> {
         try {
-            const metadata = session.metadata!;
+            const metadata = session.metadata;
+            
+            if (!metadata) {
+                throw new Error('No metadata found in session');
+            }
+
             const totalAmount = parseFloat(metadata.amount);
             const platformFee = totalAmount * 0.1; 
             const therapistAmount = totalAmount - platformFee;
+
 
             const adminWallet = await this._walletRepository.getOrCreateWallet('admin', 'admin');
             
@@ -116,11 +143,12 @@ export class PaymentService implements IPaymentService {
                 metadata.therapistId, 
                 'therapist'
             );
-
-            await Promise.all([
+            
+            const [updatedAdminWallet, updatedTherapistWallet] = await Promise.all([
                 this._walletRepository.incrementBalance(adminWallet._id.toString(), platformFee),
                 this._walletRepository.incrementBalance(therapistWallet._id.toString(), therapistAmount),
             ]);
+            
 
             const [adminTransaction, therapistTransaction] = await Promise.all([
                 this._transactionRepository.createTransaction({
@@ -152,20 +180,26 @@ export class PaymentService implements IPaymentService {
                     },
                 }),
             ]);
-
+            
             const appointmentDate = new Date(metadata.selectedDate);
-            await this._appointmentRepository.createAppointment({
-                therapistId: metadata.therapistId,
-                clientId: metadata.userId,
-                slotId: metadata.slotId,
+            
+            const appointmentData = {
+                therapistId: new Types.ObjectId(metadata.therapistId),
+                clientId: new Types.ObjectId(metadata.userId),
+                slotId: new Types.ObjectId(metadata.slotId),
                 appointmentDate: appointmentDate,
-                status: 'scheduled',
+                appointmentTime: metadata.selectedTime,  
+                consultationMode: metadata.consultationMode.toLowerCase(),
+                status: 'scheduled' as const,
                 transactionId: therapistTransaction._id,
                 notes: `${metadata.consultationMode} consultation at ${metadata.selectedTime}`,
-            });
+            };
+
+            const appointment = await this._appointmentRepository.createAppointment(appointmentData);
 
         } catch (error) {
-            logger.error('Error fulfilling order:', error);
+            logger.error('Error message:', error instanceof Error ? error.message : 'Unknown error');
+            logger.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
             throw error;
         }
     }

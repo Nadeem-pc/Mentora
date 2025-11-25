@@ -3,6 +3,7 @@ import { IAppointment } from "@/models/interface/appointment.model.interface";
 export interface IAppointmentRepository {
     createAppointment(data: Partial<IAppointment>): Promise<IAppointment>;
     findById(id: string): Promise<IAppointment | null>;
+    findByIdWithoutPopulate(id: string): Promise<IAppointment | null>;
     findByClientId(clientId: string, skip?: number, limit?: number): Promise<IAppointment[]>;
     findByTherapistId(therapistId: string, skip?: number, limit?: number): Promise<IAppointment[]>;
     findUpcomingAppointments(userId: string, userType: 'client' | 'therapist'): Promise<IAppointment[]>;

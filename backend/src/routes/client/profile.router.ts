@@ -11,5 +11,6 @@ clientProfileRouter.patch('/profile-img', clientProfileController.updateProfileI
 clientProfileRouter.get("/s3-presigned-url", clientProfileController.preSignedURL);
 clientProfileRouter.get("/s3-getPresigned-url", clientProfileController.get_preSignedURL);
 clientProfileRouter.get('/appointments', clientProfileController.getClientAppointments);
+clientProfileRouter.patch('/appointment/:appointmentId', clientProfileController.cancelAppointment);
 
 export default clientProfileRouter;

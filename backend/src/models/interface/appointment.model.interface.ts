@@ -5,6 +5,8 @@ export interface IAppointment extends Document {
     clientId: Types.ObjectId;
     slotId: Types.ObjectId;
     appointmentDate: Date;
+    appointmentTime: string;  
+    consultationMode: "video" | "audio";  
     status: string;
     transactionId: Types.ObjectId;
     feedbackId: Types.ObjectId | null;

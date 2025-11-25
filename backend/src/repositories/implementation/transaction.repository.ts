@@ -1,9 +1,9 @@
 import { ITransactionModel } from "@/models/interface/transaction.model.interface";
 import { BaseRepository } from "../base.repository";
+import { ITransactionRepository } from "../interface/ITransactionRepository";
 import Transaction from "@/models/implementation/transaction.model";
 import { Types } from "mongoose";
 import logger from "@/config/logger.config";
-import { ITransactionRepository } from "../interface/ITransactionRepository";
 
 export class TransactionRepository extends BaseRepository<ITransactionModel> implements ITransactionRepository {
     constructor() {
@@ -12,14 +12,28 @@ export class TransactionRepository extends BaseRepository<ITransactionModel> imp
 
     async createTransaction(data: Partial<ITransactionModel>): Promise<ITransactionModel> {
         try {
-            return await this.model.create(data);
+            const transaction = await this.model.create(data);
+            return transaction;
         } catch (error) {
             logger.error('Error creating transaction:', error);
             throw new Error("Error creating transaction");
         }
     }
 
-    async findByWalletId(walletId: string, skip?: number, limit?: number): Promise<ITransactionModel[]> {
+    async findById(id: string): Promise<ITransactionModel | null> {
+        try {
+            return await this.model.findById(new Types.ObjectId(id));
+        } catch (error) {
+            logger.error('Error finding transaction by id:', error);
+            throw new Error("Error finding transaction");
+        }
+    }
+
+    async findByWalletId(
+        walletId: string, 
+        skip?: number, 
+        limit?: number
+    ): Promise<ITransactionModel[]> {
         try {
             const query = this.model
                 .find({ walletId: new Types.ObjectId(walletId) })
@@ -35,9 +49,10 @@ export class TransactionRepository extends BaseRepository<ITransactionModel> imp
         }
     }
 
+    // Keep the original method name
     async updateTransactionStatus(
         transactionId: string, 
-        status: "pending" | "completed" | "failed"
+        status: 'pending' | 'completed' | 'failed'
     ): Promise<ITransactionModel | null> {
         try {
             return await this.model.findByIdAndUpdate(
@@ -51,6 +66,18 @@ export class TransactionRepository extends BaseRepository<ITransactionModel> imp
         }
     }
 
+    async countByWalletId(walletId: string): Promise<number> {
+        try {
+            return await this.model.countDocuments({ 
+                walletId: new Types.ObjectId(walletId) 
+            }).exec();
+        } catch (error) {
+            logger.error('Error counting transactions:', error);
+            throw new Error("Error counting transactions");
+        }
+    }
+
+    // Add back if your service uses this method
     async getTransactionsByOwner(ownerId: string, ownerType: string): Promise<ITransactionModel[]> {
         try {
             const wallets = await this.model.aggregate([
@@ -71,7 +98,6 @@ export class TransactionRepository extends BaseRepository<ITransactionModel> imp
                 },
                 { $sort: { createdAt: -1 } }
             ]);
-
             return wallets;
         } catch (error) {
             logger.error('Error getting transactions by owner:', error);

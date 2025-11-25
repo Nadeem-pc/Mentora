@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Video, Phone, Clock, IndianRupee, Loader2, Save, X, Calendar, Edit, CalendarX } from 'lucide-react';
 import { slotService } from '@/services/therapist/slotService';
 import { toast } from 'sonner';
+import TherapistStatusPage from './Dummy';
+import { therapistProfileService } from '@/services/therapist/profileService';
 
 interface TimeSlot {
   startTime: string;
@@ -25,25 +27,46 @@ export default function SlotManagement() {
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [editingSchedule, setEditingSchedule] = useState<DaySlots[]>([]);
+  const [approvalStatus, setApprovalStatus] = useState<string | null>(null);
 
   const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   const FIXED_DURATION = 50;
 
   useEffect(() => {
-    fetchWeeklySchedule();
+    fetchTherapistData();
   }, []);
 
-const fetchWeeklySchedule = async () => {
-  try {
-    setIsLoading(true);
-    const response = await slotService.getWeeklySchedule();
-    setWeeklySchedule(response.data);
-    setIsLoading(false);
-  } catch (error) {
-    console.error('Error fetching schedule:', error);
-    setIsLoading(false);
+  const fetchTherapistData = async () => {
+    try {
+      setIsLoading(true);
+
+      const approvalStatus = await therapistProfileService.getApprovalStatus(); 
+      console.log('status', approvalStatus)
+      setApprovalStatus(approvalStatus);
+      
+      if (approvalStatus === 'Approved') {
+        await fetchWeeklySchedule();
+      }
+      
+      setIsLoading(false);
+    } catch (error) {
+      console.error('Error fetching therapist data:', error);
+      setIsLoading(false);
+    }
+  };
+
+  const fetchWeeklySchedule = async () => {
+    try {
+      const response = await slotService.getWeeklySchedule();
+      setWeeklySchedule(response.data);
+    } catch (error) {
+      console.error('Error fetching schedule:', error);
+    }
+  };
+
+  if (!isLoading && approvalStatus !== 'Approved') {
+    return <TherapistStatusPage />;
   }
-};
 
   const initializeNewSchedule = () => {
     const newSchedule: DaySlots[] = DAYS.map(day => ({
@@ -57,7 +80,6 @@ const fetchWeeklySchedule = async () => {
 
   const startEditingSchedule = () => {
     if (weeklySchedule) {
-      // Create a full week schedule with existing data
       const fullSchedule: DaySlots[] = DAYS.map(day => {
         const existingDay = weeklySchedule.schedule.find(d => d.day === day);
         return existingDay || { day, enabled: false, slots: [] };
@@ -92,26 +114,22 @@ const fetchWeeklySchedule = async () => {
   const updateSlot = (dayIndex: number, slotIndex: number, field: string, value: any) => {
     const updated = [...editingSchedule];
     
-    // If updating start time, validate it doesn't overlap with existing slots
     if (field === 'startTime' && value) {
       const currentDaySlots = updated[dayIndex].slots;
       const newStartMinutes = timeToMinutes(value);
       const newEndMinutes = newStartMinutes + FIXED_DURATION;
 
-      // Check if slot ends after midnight
       if (newEndMinutes >= 1440) {
         toast.error(`This slot would end after midnight (${formatTime(calculateEndTime(value))}). Please choose an earlier time.`);
         return;
       }
 
-      // Check against other slots (excluding current slot being edited)
       for (let i = 0; i < currentDaySlots.length; i++) {
         if (i === slotIndex || !currentDaySlots[i].startTime) continue;
 
         const existingStart = timeToMinutes(currentDaySlots[i].startTime);
         const existingEnd = existingStart + FIXED_DURATION;
 
-        // Check if new slot overlaps with existing slot
         if (
           (newStartMinutes >= existingStart && newStartMinutes < existingEnd) ||
           (newEndMinutes > existingStart && newEndMinutes <= existingEnd) ||
@@ -126,7 +144,6 @@ const fetchWeeklySchedule = async () => {
       }
     }
 
-    // If updating price, ensure it's positive
     if (field === 'price' && value < 0) {
       toast.error('Price cannot be negative');
       return;
@@ -160,7 +177,6 @@ const fetchWeeklySchedule = async () => {
   const checkTimeSlotOverlap = (slots: TimeSlot[]): { hasOverlap: boolean; message: string } => {
     if (slots.length <= 1) return { hasOverlap: false, message: '' };
 
-    // Sort slots by start time
     const sortedSlots = [...slots].sort((a, b) => 
       timeToMinutes(a.startTime) - timeToMinutes(b.startTime)
     );
@@ -197,7 +213,6 @@ const fetchWeeklySchedule = async () => {
         return false;
       }
 
-      // Check for empty or invalid fields
       for (let i = 0; i < day.slots.length; i++) {
         const slot = day.slots[i];
         
@@ -216,23 +231,20 @@ const fetchWeeklySchedule = async () => {
           return false;
         }
 
-        // Check if slot ends after midnight (goes into next day)
         const startMinutes = timeToMinutes(slot.startTime);
         const endMinutes = startMinutes + FIXED_DURATION;
-        if (endMinutes >= 1440) { // 1440 minutes = 24 hours
+        if (endMinutes >= 1440) {
           toast.error(`Slot ${i + 1} on ${day.day} starting at ${formatTime(slot.startTime)} would end after midnight. Please choose an earlier time.`);
           return false;
         }
       }
 
-      // Check for overlapping time slots
       const overlapCheck = checkTimeSlotOverlap(day.slots);
       if (overlapCheck.hasOverlap) {
         toast.error(`${day.day}: ${overlapCheck.message}`);
         return false;
       }
 
-      // Check for duplicate time slots
       const uniqueTimes = new Set(day.slots.map(slot => slot.startTime));
       if (uniqueTimes.size !== day.slots.length) {
         toast.error(`${day.day} has duplicate time slots. Please ensure all slots have different start times.`);
@@ -243,30 +255,28 @@ const fetchWeeklySchedule = async () => {
     return true;
   };
 
-const handleSaveSchedule = async () => {
-  if (!validateSchedule()) return;
+  const handleSaveSchedule = async () => {
+    if (!validateSchedule()) return;
 
-  try {
-    const scheduleData = editingSchedule.filter(day => day.enabled);
-    
-    let response;
-    if (weeklySchedule) {
-      // Update existing schedule
-      response = await slotService.updateWeeklySchedule({ schedule: scheduleData });
-    } else {
-      // Create new schedule
-      response = await slotService.createWeeklySchedule({ schedule: scheduleData });
+    try {
+      const scheduleData = editingSchedule.filter(day => day.enabled);
+      
+      let response;
+      if (weeklySchedule) {
+        response = await slotService.updateWeeklySchedule({ schedule: scheduleData });
+      } else {
+        response = await slotService.createWeeklySchedule({ schedule: scheduleData });
+      }
+
+      setWeeklySchedule(response.data);
+      setIsEditing(false);
+      setEditingSchedule([]);
+      toast.success(weeklySchedule ? 'Weekly schedule updated successfully!' : 'Weekly schedule created successfully!');
+    } catch (error: any) {
+      console.error('Error saving schedule:', error);
+      toast.error(error.response?.data?.message || 'Failed to save schedule');
     }
-
-    setWeeklySchedule(response.data);
-    setIsEditing(false);
-    setEditingSchedule([]);
-    toast.success(weeklySchedule ? 'Weekly schedule updated successfully!' : 'Weekly schedule created successfully!');
-  } catch (error: any) {
-    console.error('Error saving schedule:', error);
-    toast.error(error.response?.data?.message || 'Failed to save schedule');
-  }
-};
+  };
 
   const formatTime = (time: string) => {
     if (!time) return '';
@@ -300,7 +310,6 @@ const handleSaveSchedule = async () => {
   return (
     <div className="min-h-screen bg-gradient-to-br p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl md:text-4xl font-bold text-gray-800 mb-2">
             Weekly Schedule Management
@@ -310,7 +319,6 @@ const handleSaveSchedule = async () => {
           </p>
         </div>
 
-        {/* No Schedule State */}
         {!weeklySchedule && !isEditing && (
           <div className="bg-white rounded-xl shadow-lg border-2 border-dashed border-gray-300 p-12">
             <div className="text-center max-w-md mx-auto">
@@ -336,7 +344,6 @@ const handleSaveSchedule = async () => {
           </div>
         )}
 
-        {/* Schedule Editor */}
         {isEditing && (
           <div className="bg-white rounded-xl shadow-lg border border-gray-200 mb-6">
             <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-purple-50">
@@ -358,7 +365,6 @@ const handleSaveSchedule = async () => {
                       : 'border-gray-200 bg-gray-50'
                   }`}
                 >
-                  {/* Day Header */}
                   <div className="p-4 flex items-center justify-between">
                     <label className="flex items-center gap-3 cursor-pointer">
                       <input
@@ -383,7 +389,6 @@ const handleSaveSchedule = async () => {
                     )}
                   </div>
 
-                  {/* Slots for this day */}
                   {daySchedule.enabled && (
                     <div className="px-4 pb-4 space-y-3">
                       {daySchedule.slots.length === 0 ? (
@@ -409,7 +414,6 @@ const handleSaveSchedule = async () => {
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              {/* Start Time */}
                               <div>
                                 <label className="block text-xs font-medium text-gray-600 mb-1">
                                   Start Time
@@ -434,7 +438,6 @@ const handleSaveSchedule = async () => {
                                 )}
                               </div>
 
-                              {/* Price */}
                               <div>
                                 <label className="block text-xs font-medium text-gray-600 mb-1">
                                   Price (₹)
@@ -450,7 +453,6 @@ const handleSaveSchedule = async () => {
                                   step="0.01"
                                   className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                   onKeyDown={(e) => {
-                                    // Prevent negative sign
                                     if (e.key === '-' || e.key === 'e' || e.key === 'E') {
                                       e.preventDefault();
                                     }
@@ -458,7 +460,6 @@ const handleSaveSchedule = async () => {
                                 />
                               </div>
 
-                              {/* Consultation Modes */}
                               <div className="md:col-span-2">
                                 <label className="block text-xs font-medium text-gray-600 mb-2">
                                   Consultation Modes
@@ -497,7 +498,6 @@ const handleSaveSchedule = async () => {
               ))}
             </div>
 
-            {/* Action Buttons */}
             <div className="p-6 border-t border-gray-200 flex gap-3 justify-end bg-gray-50">
               <button
                 onClick={() => {
@@ -519,7 +519,6 @@ const handleSaveSchedule = async () => {
           </div>
         )}
 
-        {/* Display Current Schedule */}
         {weeklySchedule && !isEditing && (
           <div className="bg-white rounded-xl shadow-lg border border-gray-200">
             <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-purple-50 flex items-center justify-between">
@@ -594,7 +593,6 @@ const handleSaveSchedule = async () => {
           </div>
         )}
 
-        {/* Info Box */}
         {weeklySchedule && !isEditing && (
           <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
             <p className="text-sm text-blue-800">

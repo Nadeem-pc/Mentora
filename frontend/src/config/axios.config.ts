@@ -1,26 +1,12 @@
-// import axios from 'axios';
-// import { env } from './env.config';
-
-// const createAxiosInstance = async (BASE_URL:string) => {
-//     const axiosInstance = axios.create({
-//         baseURL: BASE_URL,
-//         withCredentials: true
-//     });
-//     return axiosInstance;
-// };
-
-// export const authInstance = await createAxiosInstance(`${env.BACKEND_URL}/auth`);
-
-import axios, {type AxiosInstance } from 'axios';
 import { env } from './env.config';
+import axios, {type AxiosInstance } from 'axios';
 
-const createAxiosInstance = (BASE_URL: string): AxiosInstance => {
+const createAxiosInstance = (): AxiosInstance => {
   const axiosInstance = axios.create({
-    baseURL: BASE_URL,
+    baseURL: `${env.BACKEND_URL}`,
     withCredentials: true,
   });
 
-  // Optional: Attach request/response interceptors
   axiosInstance.interceptors.request.use(
     (config) => {
       const token = localStorage.getItem('accessToken');
@@ -33,37 +19,52 @@ const createAxiosInstance = (BASE_URL: string): AxiosInstance => {
   );
 
   axiosInstance.interceptors.response.use(
-    (response) => response,
-    async (error) => {
-      const originalRequest = error.config;
-      if (
-        error.response?.status === 401 &&
-        !originalRequest._retry &&
-        !originalRequest.url.includes('/login')
-      ) {
-        originalRequest._retry = true;
-        try {
-          const refreshResponse = await axios.post(
-            `${env.BACKEND_URL}/auth/refresh-token`,
-            {},
-            { withCredentials: true }
-          );
-          localStorage.setItem('accessToken', refreshResponse.data.token);
-          originalRequest.headers.Authorization = `Bearer ${refreshResponse.data.token}`;
-          return axios(originalRequest);
-        } catch (refreshError) {
-          localStorage.removeItem('accessToken');
-          window.location.href = '/login';
-          return Promise.reject(refreshError);
-        }
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+
+    if (
+      error.response?.status === 401 &&
+      !originalRequest._retry &&
+      !originalRequest.url.includes('/login') &&
+      !originalRequest.url.includes('/refresh-token')
+    ) {
+      if (!localStorage.getItem("accessToken")) {
+        return Promise.reject(error);
       }
-      return Promise.reject(error);
+
+      originalRequest._retry = true;
+      try {
+        const refreshResponse = await axios.post(
+          `${env.BACKEND_URL}/auth/refresh-token`,
+          {},
+          { withCredentials: true }
+        );
+        localStorage.setItem('accessToken', refreshResponse.data.token);
+        originalRequest.headers.Authorization = `Bearer ${refreshResponse.data.token}`;
+        return axiosInstance(originalRequest);
+      } catch (refreshError) {
+        localStorage.removeItem('accessToken');
+        window.location.href = '/auth/form';
+        return Promise.reject(refreshError);
+      }
     }
-  );
+    return Promise.reject(error);
+  }
+);
+
+  // axiosInstance.interceptors.response.use(
+//   (response) => response,
+//   (error) => {
+//     if (error.response?.status === 403 && error.response?.data?.reason === "Blocked") {
+//       localStorage.removeItem("token");
+//       window.location.href = "/blocked"; // redirect to blocked page
+//     }
+//     return Promise.reject(error);
+//   }
+// );
 
   return axiosInstance;
 };
 
-export { createAxiosInstance };
-
-export const authInstance = createAxiosInstance(`${env.BACKEND_URL}/auth`);
+export const axiosInstance = createAxiosInstance();

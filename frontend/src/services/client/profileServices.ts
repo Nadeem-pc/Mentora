@@ -1,4 +1,5 @@
 import { axiosInstance } from "@/config/axios.config";
+import { API } from "@/constants/api.constant";
 import type { UserProfile } from "@/types/dtos/user.dto";
 import { S3BucketUtil } from "@/utils/S3Bucket.util";
 
@@ -70,6 +71,18 @@ export const clientProfileService = {
       return data;
     } catch (error) {
       console.error('Error fetching appointments:', error);
+      throw error;
+    }
+  },
+
+  cancelAppointment: async (appointmentId: string, cancelReason: string) => {
+    try {
+      const { data } = await axiosInstance.patch(API.CLIENT.CANCEL_APPOINTMENT(appointmentId), {
+        cancelReason
+      });
+      return data;
+    } catch (error) {
+      console.error('Error cancelling appointment:', error);
       throw error;
     }
   },

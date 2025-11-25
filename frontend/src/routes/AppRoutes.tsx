@@ -72,6 +72,7 @@ export const router = createBrowserRouter([
         path: '/payment/cancel', element: <PaymentCancel/>
     },
 
+
     {
         path: '/admin',  element: <ProtectedRoute allowedRoles={['admin']}> <DashboardLayout /> </ProtectedRoute>,
         children: [
@@ -89,6 +90,9 @@ export const router = createBrowserRouter([
             },
             {
                 path: 'job-applications/:applicationId', element: <JobApplicationDetail/>
+            },
+            {
+                path: 'wallet', element: <TherapistEarnings/>
             },
         ]
     },
