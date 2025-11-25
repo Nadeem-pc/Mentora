@@ -27,7 +27,7 @@ export class ChatController implements IChatController {
         try {
             const { id: therapistId } = (req as AuthRequest).user;
             const clientId = req.params.clientId;
-            const page = parseInt(req.query.page as string) || 1;g
+            const page = parseInt(req.query.page as string) || 1;
             const limit = parseInt(req.query.limit as string) || 50;
 
             const messages = await this._chatService.getTherapistMessages(therapistId, clientId, page, limit);
