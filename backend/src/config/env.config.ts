@@ -39,4 +39,5 @@ export const env = {
     FRONTEND_URL: getEnvVar('FRONTEND_URL'),
     GOOGLE_USERINFO_URL: getEnvVar('GOOGLE_USERINFO_URL'),
     GOOGLE_API_TIMEOUT: getEnvVar('GOOGLE_API_TIMEOUT'),
+    GEMINI_API_KEY: getEnvVar('GEMINI_API_KEY'),
 };
