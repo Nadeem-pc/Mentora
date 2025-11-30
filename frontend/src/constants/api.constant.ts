@@ -9,7 +9,8 @@ export const API = {
             `/client/therapist/${therapistId}/slots/available?date=${date}`,
         CREATE_CHECKOUT_SESSION: '/api/v1/payment/create-checkout-session',
         GET_PAYMENT_RECEIPT: (sessionId: string) => `/api/v1/payment/receipt/${sessionId}`,
-        CANCEL_APPOINTMENT: (appointmentId: string) => `/client/appointment/${appointmentId}`
+        CANCEL_APPOINTMENT: (appointmentId: string) => `/client/appointment/${appointmentId}`,
+        GET_THERAPIST_SUGGESTIONS: "/api/ai/therapist-suggestions",
     },
     THERAPIST: {
         GET_THERAPIST_PROFILE: "/therapist/profile",
