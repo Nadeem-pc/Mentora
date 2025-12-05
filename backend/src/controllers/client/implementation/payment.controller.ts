@@ -4,6 +4,7 @@ import { IPaymentController } from "../interface/IPaymentController";
 import { HttpResponse } from '@/constants/response-message.constant';
 import logger from '@/config/logger.config';
 import { HttpStatus } from '@/constants/status.constant';
+import { AuthRequest } from '@/types/auth-request';
 
 export class PaymentController implements IPaymentController {
     constructor(private readonly _paymentService: IPaymentService) {}
@@ -11,7 +12,7 @@ export class PaymentController implements IPaymentController {
     createCheckoutSession = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
             const { therapistId, consultationMode, selectedDate, selectedTime, price } = req.body;
-            const userId = req.user?.id;
+            const userId = (req as AuthRequest).user?.id;
 
             if (!therapistId || !consultationMode || !selectedDate || !selectedTime || !price) {
                 res.status(HttpStatus.BAD_REQUEST).json({
@@ -87,6 +88,47 @@ export class PaymentController implements IPaymentController {
             
         } catch (error) {
             logger.error('Get payment receipt error:', error);
+            next(error);
+        }
+    };
+
+    payWithWallet = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+        try {
+            const { therapistId, consultationMode, selectedDate, selectedTime, price } = req.body;
+            const userId = (req as AuthRequest).user?.id;
+
+            if (!therapistId || !consultationMode || !selectedDate || !selectedTime || !price) {
+                res.status(HttpStatus.BAD_REQUEST).json({
+                    success: false,
+                    message: HttpResponse.MISSING_FIELDS,
+                });
+                return;
+            }
+
+            if (!userId) {
+                res.status(HttpStatus.UNAUTHORIZED).json({ 
+                    success: false, 
+                    message: HttpResponse.UNAUTHORIZED 
+                });
+                return;
+            }
+
+            const result = await this._paymentService.payWithWallet(
+                therapistId,
+                userId,
+                consultationMode,
+                selectedDate,
+                selectedTime,
+                price
+            );
+
+            res.status(HttpStatus.OK).json({
+                success: true,
+                message: 'Appointment booked successfully with wallet payment',
+                data: result
+            });
+        } catch (error) {
+            logger.error('Wallet payment error:', error);
             next(error);
         }
     };
