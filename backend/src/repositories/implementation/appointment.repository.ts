@@ -50,6 +50,15 @@ export class AppointmentRepository extends BaseRepository<IAppointment> implemen
         }
     }
 
+    async findByIdWithoutPopulate(id: string): Promise<IAppointment | null> {
+        try {
+            return await this.model.findById(new Types.ObjectId(id));
+        } catch (error) {
+            logger.error('Error finding appointment by id:', error);
+            throw new Error("Error finding appointment");
+        }
+    }
+
     async findByClientId(clientId: string, skip?: number, limit?: number): Promise<IAppointment[]> {
         try {
             const query = this.model
@@ -136,7 +145,7 @@ export class AppointmentRepository extends BaseRepository<IAppointment> implemen
         cancelReason?: string
     ): Promise<IAppointment | null> {
         try {
-            const updateData = { status };
+            const updateData: any = { status };
             if (cancelReason) {
                 updateData.cancelReason = cancelReason;
             }
@@ -175,7 +184,7 @@ export class AppointmentRepository extends BaseRepository<IAppointment> implemen
         status?: string
     ): Promise<IAppointment[]> {
         try {
-            const filter = { 
+            const filter: any = { 
                 therapistId: new Types.ObjectId(therapistId) 
             };
 
@@ -199,7 +208,7 @@ export class AppointmentRepository extends BaseRepository<IAppointment> implemen
 
     async countByTherapist(therapistId: string, status?: string): Promise<number> {
         try {
-            const filter = { 
+            const filter: any = { 
                 therapistId: new Types.ObjectId(therapistId) 
             };
 

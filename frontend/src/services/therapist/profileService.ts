@@ -41,4 +41,14 @@ export const therapistProfileService = {
             throw error;
         }
     },
+
+    getApprovalStatus: async () => {
+        try {
+            const response = await axiosInstance.get(API.THERAPIST.GET_APPROVALSTATUS);
+            return response.data.approvalStatus;
+        } catch (error) {
+            console.error(error);
+            throw error;
+        }
+    },
 };

@@ -39,7 +39,7 @@ const TherapistS3Util = {
   },
 };
 
-const TherapistProfilePage: React.FC = () => {
+const VerificationForm: React.FC = () => {
   const [profileData, setProfileData] = useState<ProfileData>({
     profileImg: '',
     gender: '',
@@ -515,4 +515,4 @@ const handleSubmit = async () => {
   );
 };
 
-export default TherapistProfilePage;
+export default VerificationForm;

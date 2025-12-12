@@ -47,7 +47,7 @@ export class JobApplicationController implements IJobApplicationController {
 
             res.status(HttpStatus.OK).json(response);
             
-        } catch (error) {
+        } catch (error: unknown) {
             logger.error(error);
             next(error);
         }
@@ -58,7 +58,7 @@ export class JobApplicationController implements IJobApplicationController {
             const { applicationId } = req.params;
             const application = await this._jobApplicationService.getApplicationDetails(applicationId);
             res.status(HttpStatus.OK).json({ success: true, application });
-        } catch (error) {
+        } catch (error: unknown) {
             logger.error(error);
             next(error);
         }
@@ -105,7 +105,7 @@ export class JobApplicationController implements IJobApplicationController {
                 data: updatedApplication
             });
 
-        } catch (error) {
+        } catch (error: unknown) {
             logger.error('Error updating application status:', error);
             if (error.statusCode === HttpStatus.CONFLICT) {
                 res.status(HttpStatus.CONFLICT).json({

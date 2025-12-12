@@ -4,43 +4,41 @@ import { IClientProfileService } from "@/services/client/interface/IProfileServi
 import { IClientProfileController } from "../interface/IProfileController";
 import logger from "@/config/logger.config";
 import { HttpResponse } from "@/constants/response-message.constant";
-import { UserMapper } from "@/mappers/user.mapper";
+import { AuthRequest } from "@/types/auth-request";
 
 export class ClientProfileController implements IClientProfileController {
     constructor(private readonly _clientProfileService: IClientProfileService) {}
 
     getClientData = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
-            const clientId = req.user?.id;
-            const client = await this._clientProfileService.getClientData(clientId);
+            const clientId = (req as AuthRequest).user.id;
+            const clientDTO = await this._clientProfileService.getClientData(clientId);
             
-            if (!client) {
+            if (!clientDTO) {
                 res.status(HttpStatus.NOT_FOUND).json({ 
                     success: false, 
                     message: HttpResponse.USER_NOT_FOUND 
                 });
                 return;
             }
-
-            const clientDTO = UserMapper.toProfileDTO(client);
             
             res.status(HttpStatus.OK).json({ success: true, data: clientDTO });
-        } catch (error) {
-            logger.error(error);
+        } catch (error: unknown) {
+            logger.error("Error fetching client data:", error);
             next(error);
         }
     };
 
     updateProfile = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
-            const clientId = req.user?.id;
+            const clientId = (req as AuthRequest).user.id;
             await this._clientProfileService.updateProfile(clientId, req.body);
             res.status(HttpStatus.OK).json({ 
                 success: true, 
                 message: HttpResponse.PROFILE_UPDATED 
             });
-        } catch (error) {
-            logger.error(error);
+        } catch (error: unknown) {
+            logger.error("Error updating profile:", error);
             next(error);
         }
     };
@@ -69,7 +67,7 @@ export class ClientProfileController implements IClientProfileController {
                 fileURL 
             });
 
-        } catch (error) {
+        } catch (error: unknown) {
             logger.error("Error generating presigned URL:", error);
             next(error);
         }
@@ -97,7 +95,7 @@ export class ClientProfileController implements IClientProfileController {
                 get_fileURL 
             });
 
-        } catch (error) {
+        } catch (error: unknown) {
             logger.error("Error generating get presigned URL:", error);
             next(error);
         }
@@ -105,7 +103,7 @@ export class ClientProfileController implements IClientProfileController {
 
     updateProfileImage = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
-            const clientId = req.user?.id;
+            const clientId = (req as AuthRequest).user.id;
             const { profileImg } = req.body;
             
             if (!profileImg) {
@@ -123,7 +121,7 @@ export class ClientProfileController implements IClientProfileController {
                 message: HttpResponse.PROFILE_PICTURE_CHANGED,
                 imageUrl: result.imageUrl
             });
-        } catch (error) {
+        } catch (error: unknown) {
             logger.error("Error updating profile image:", error);
             next(error);
         }
@@ -131,7 +129,7 @@ export class ClientProfileController implements IClientProfileController {
     
     getClientAppointments = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
-            const clientId = req.user?.id;
+            const clientId = (req as AuthRequest).user.id;
             const { status, page = 1, limit = 10 } = req.query;
             
             const pageNum = parseInt(page as string);
@@ -151,8 +149,48 @@ export class ClientProfileController implements IClientProfileController {
                 page: pageNum,
                 limit: limitNum
             });
-        } catch (error) {
+        } catch (error: unknown) {
             logger.error("Error fetching client appointments:", error);
+            next(error);
+        }
+    };
+
+    cancelAppointment = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+        try {
+            const clientId = (req as AuthRequest).user.id;
+            const { appointmentId } = req.params;
+            const { cancelReason } = req.body;
+            
+            if (!appointmentId) {
+                res.status(HttpStatus.BAD_REQUEST).json({
+                    success: false,
+                    message: HttpResponse.APPOINTMENT_ID_MISSING
+                });
+                return;
+            }
+
+            if (!cancelReason || cancelReason.trim() === '') {
+                res.status(HttpStatus.BAD_REQUEST).json({
+                    success: false,
+                    message: HttpResponse.CANCEL_REASON_MISSING
+                });
+                return;
+            }
+
+            const result = await this._clientProfileService.cancelAppointment(
+                clientId,
+                appointmentId,
+                cancelReason
+            );
+
+            res.status(HttpStatus.OK).json({
+                success: true,
+                message: result.message,
+                refundAmount: result.refundAmount,
+                refundPercentage: result.refundPercentage
+            });
+        } catch (error: unknown) {
+            logger.error("Error cancelling appointment:", error);
             next(error);
         }
     };

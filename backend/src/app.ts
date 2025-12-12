@@ -7,6 +7,7 @@ import adminRouter from './routes/admin/index.router';
 import clientRouter from './routes/client/index.router';
 import therapistRouter from './routes/therapist/index.router';
 import paymentRouter from './routes/client/payment.router';
+import walletRouter from './routes/shared/wallet.router';
 
 export const app = express();
 
@@ -27,5 +28,6 @@ app.use('/admin', adminRouter);
 app.use('/client', clientRouter);
 app.use('/therapist', therapistRouter);
 app.use('/api/v1/payment', paymentRouter);
+app.use('/wallet', walletRouter);
 
 app.use(errorHandler);

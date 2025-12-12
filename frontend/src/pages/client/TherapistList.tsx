@@ -295,7 +295,8 @@ const TherapistListing = () => {
                   />
                   <button 
                     onClick={() => {
-                      navigate('/therapist/detail', { state: { therapist } })
+                      navigate(`/therapist/detail/${therapist.id}`)
+                      // navigate('/therapist/detail', { state: { therapist } })
                     }}
                     className="absolute -bottom-0 left-1/2 -translate-x-1/2 px-3 py-1 bg-white border border-gray-300 rounded-full text-xs font-medium text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-all shadow-sm whitespace-nowrap"
                   >
@@ -358,8 +359,8 @@ const TherapistListing = () => {
 
                 <div className="mt-3 flex justify-between items-center text-sm">
                   <div>
-                    <span className="text-gray-500">Next Available Slot: </span>
-                    <span className="font-medium text-green-600">{therapist.nextSlot.date}, {therapist.nextSlot.time}</span>
+                    {/* <span className="text-gray-500">Next Available Slot: </span>
+                    <span className="font-medium text-green-600">{therapist.nextSlot.date}, {therapist.nextSlot.time}</span> */}
                   </div>
                 </div>
               </div>

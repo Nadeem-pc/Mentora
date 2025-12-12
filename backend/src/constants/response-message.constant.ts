@@ -46,4 +46,6 @@ export const HttpResponse = {
     SLOTS_RETRIEVED : "Slots retrieved successfully",
     SLOT_EDITED: "Weekly schedule updated successfully",
     INVALID_SLOT_DATA: "Invalid schedule data",
+    APPOINTMENT_ID_MISSING: "Appointment ID is required",
+    CANCEL_REASON_MISSING: "Cancel reason is required",
 }; 

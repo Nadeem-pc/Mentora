@@ -9,5 +9,6 @@ therapistProfileRouter.get('/profile', therapistProfileController.getTherapistPr
 therapistProfileRouter.patch('/profile', therapistProfileController.updateProfile);
 therapistProfileRouter.get('/s3-presigned-url', therapistProfileController.preSignedURL);
 therapistProfileRouter.get('/s3-getPresigned-url', therapistProfileController.getPreSignedURL);
+therapistProfileRouter.get('/approvalStatus', therapistProfileController.getApprovalStatus);
 
 export default therapistProfileRouter;
