@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import profile_avatar from '../../assets/pngtree-avatar-icon-profile-icon-member-login-vector-isolated-png-image_5247852-removebg-preview.png';
-import { User, Edit3, Camera, Mail, Phone, Calendar, LogOut, X, Clock, Video, CheckCircle, XCircle, CalendarDays, IndianRupee, AlertCircle, Ban } from 'lucide-react';
+import { User, Edit3, Camera, Mail, Phone, Calendar, LogOut, X, Clock, Video, CheckCircle, XCircle, CalendarDays, IndianRupee, AlertCircle, Ban, Wallet, ArrowUpRight, ArrowDownLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import ImageCropper from '@/components/shared/ImageCropper';
 import { S3BucketUtil } from '@/utils/S3Bucket.util';
@@ -9,6 +9,8 @@ import { useNavigate } from 'react-router-dom';
 import { clientProfileService, type Appointment } from '@/services/client/profileServices';
 import type { UserProfile } from '@/types/dtos/user.dto';
 import ConfirmationModal from '@/components/shared/Modal';
+import { walletService } from '@/services/shared/walletService';
+import Header from '@/components/client/Header';
 
 interface ValidationErrors {
   firstName?: string;
@@ -17,6 +19,38 @@ interface ValidationErrors {
   phone?: string;
   gender?: string;
   dob?: string;
+}
+
+interface WalletTransaction {
+  id: string;
+  type: 'credit' | 'debit';
+  amount: number;
+  description: string;
+  status: string;
+  date: string;
+  metadata?: unknown;
+}
+
+interface WalletData {
+  wallet: {
+    id: string;
+    balance: number;
+    ownerId: string;
+    ownerType: string;
+  };
+  statistics: {
+    totalRevenue: number;
+    thisMonthRevenue: number;
+    platformFee: number;
+    balance: number;
+  };
+  transactions: WalletTransaction[];
+  pagination: {
+    currentPage: number;
+    limit: number;
+    totalItems: number;
+    totalPages: number;
+  };
 }
 
 const UserProfilePage: React.FC = () => {
@@ -40,6 +74,18 @@ const UserProfilePage: React.FC = () => {
   const [selectedCancelReason, setSelectedCancelReason] = useState('');
   const [customCancelReason, setCustomCancelReason] = useState('');
   const [isCancelling, setIsCancelling] = useState(false);
+
+  const [walletData, setWalletData] = useState<WalletData | null>(null);
+  const [isLoadingWallet, setIsLoadingWallet] = useState(false);
+  const [walletPagination, setWalletPagination] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    limit: 10,
+    totalItems: 0
+  });
+  const [walletTypeFilter, setWalletTypeFilter] = useState<'credit' | 'debit' | ''>('');
+  const [walletStartDate, setWalletStartDate] = useState('');
+  const [walletEndDate, setWalletEndDate] = useState('');
 
   const navigate = useNavigate();
 
@@ -105,7 +151,7 @@ const UserProfilePage: React.FC = () => {
         toast.success(message);
         handleCancelModalClose();
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error cancelling appointment:', error);
       const errorMessage = error.response?.data?.message || 'Failed to cancel appointment';
       toast.error(errorMessage);
@@ -285,6 +331,65 @@ const UserProfilePage: React.FC = () => {
     }
   }, [activeSection, appointmentFilter]);
 
+  useEffect(() => {
+    if (activeSection === 'Wallet') {
+      fetchWallet({ page: 1 });
+    }
+  }, [activeSection]);
+
+  const fetchWallet = async (overrides?: {
+    page?: number;
+    type?: 'credit' | 'debit' | '';
+    startDate?: string;
+    endDate?: string;
+  }) => {
+    try {
+      setIsLoadingWallet(true);
+      const targetPage = overrides?.page ?? walletPagination.currentPage;
+      const resolvedType = overrides?.type ?? walletTypeFilter;
+      const resolvedStartDate = overrides?.startDate ?? walletStartDate;
+      const resolvedEndDate = overrides?.endDate ?? walletEndDate;
+
+      const data = await walletService.getUserWallet({
+        page: targetPage,
+        limit: walletPagination.limit,
+        type: resolvedType || undefined,
+        startDate: resolvedStartDate || undefined,
+        endDate: resolvedEndDate || undefined,
+      });
+
+      setWalletData(data);
+      setWalletPagination(prev => ({
+        ...prev,
+        currentPage: data.pagination.currentPage,
+        totalPages: data.pagination.totalPages,
+        totalItems: data.pagination.totalItems,
+      }));
+    } catch (error) {
+      console.error("Error fetching wallet:", error);
+      toast.error("Failed to load wallet data");
+    } finally {
+      setIsLoadingWallet(false);
+    }
+  };
+
+  const handleWalletApplyFilters = () => {
+    fetchWallet({ page: 1 });
+  };
+
+  const handleWalletClearFilters = () => {
+    setWalletTypeFilter('');
+    setWalletStartDate('');
+    setWalletEndDate('');
+    fetchWallet({ page: 1, type: '', startDate: '', endDate: '' });
+  };
+
+  const handleWalletPageChange = (direction: 'prev' | 'next') => {
+    const targetPage = direction === 'next' ? walletPagination.currentPage + 1 : walletPagination.currentPage - 1;
+    if (targetPage < 1 || targetPage > walletPagination.totalPages) return;
+    fetchWallet({ page: targetPage });
+  };
+
   const fetchAppointments = async () => {
     try {
       setIsLoadingAppointments(true);
@@ -381,7 +486,7 @@ const UserProfilePage: React.FC = () => {
         setIsEditing(false);
         setValidationErrors({});
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error updating profile:", error);
       const errorMessage = error.response?.data?.message || "Failed to update profile";
       toast.error(errorMessage);
@@ -403,14 +508,14 @@ const UserProfilePage: React.FC = () => {
       setShowLogoutModal(false);
       navigate("/auth/form", { replace: true });
       toast.success(response.data.message);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error during logout:", error);
       const errorMessage = error.response?.data?.message || "Failed to logout";
       toast.error(errorMessage);
     }
   };
 
-  const handleMenuItemClick = (item: any) => {
+  const handleMenuItemClick = (item: unknown) => {
     if (item.label === 'Logout') {
       setShowLogoutModal(true);
     } else {
@@ -484,7 +589,7 @@ const UserProfilePage: React.FC = () => {
       } else {
         toast.error("Failed to get image URL from server");
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error updating profile image:", error);
       const errorMessage = error.response?.data?.message || error.message || "Failed to update profile image";
       toast.error(errorMessage);
@@ -539,6 +644,7 @@ const UserProfilePage: React.FC = () => {
   const menuItems = [
     { icon: User, label: 'Personal Details', id: 'basic', active: true },
     { icon: CalendarDays, label: 'Sessions', id: 'sessions' },
+    { icon: Wallet, label: 'Wallet', id: 'wallet' },
     { icon: LogOut, label: 'Logout', id: 'logout', active: false},
   ];
 
@@ -630,7 +736,8 @@ const UserProfilePage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen w-screen bg-gradient-to-br from-gray-50 to-green-50">
+    <div className="min-h-screen absolute top-15 w-screen bg-gradient-to-br from-gray-50 to-green-50">
+      <Header/>
       {cropperImage && (
         <ImageCropper
           image={cropperImage}
@@ -812,7 +919,7 @@ const UserProfilePage: React.FC = () => {
                               <div className="relative">
                                 {field.type === 'select' ? (
                                   <select
-                                    value={(formData as any)?.[field.fieldKey] || ""}
+                                    value={(formData as unknown)?.[field.fieldKey] || ""}
                                     onChange={(e) => handleChange(field.fieldKey, e.target.value)}
                                     onBlur={(e) => handleBlur(field.fieldKey, e.target.value)}
                                     className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-teal-500 transition-all duration-200 bg-white shadow-sm ${
@@ -831,7 +938,7 @@ const UserProfilePage: React.FC = () => {
                                 ) : (
                                   <input
                                     type={field.type}
-                                    value={(formData as any)?.[field.fieldKey] || ""}
+                                    value={(formData as unknown)?.[field.fieldKey] || ""}
                                     onChange={(e) => handleChange(field.fieldKey, e.target.value)}
                                     onBlur={(e) => handleBlur(field.fieldKey, e.target.value)}
                                     placeholder={field.placeholder}
@@ -1013,9 +1120,18 @@ const UserProfilePage: React.FC = () => {
                             </div>
                           </div>
                           
-                          <div className="ml-4 flex flex-col space-y-2">
+                          <div className="ml-4 flex flex-col space-y-2 items-end">
                             {getStatusBadge(appointment.status)}
-                            
+
+                            {(appointment.status === 'scheduled' || appointment.status === 'completed') && (
+                              <button
+                                onClick={() => navigate(`/client/chat/${appointment.therapistId._id}`)}
+                                className="flex items-center space-x-1 px-3 py-1 bg-green-50 hover:bg-green-100 text-green-700 rounded-lg text-sm font-semibold transition-all border border-green-200"
+                              >
+                                <span>Chat</span>
+                              </button>
+                            )}
+
                             {appointment.status === 'scheduled' && (
                               <button
                                 onClick={() => handleCancelClick(appointment)}
@@ -1032,6 +1148,188 @@ const UserProfilePage: React.FC = () => {
                   ))
                 )}
               </div>
+            </>
+          )}
+
+          {activeSection === 'Wallet' && (
+            <>
+              <div className="flex justify-between items-center mb-8">
+                <div>
+                  <h2 className="text-3xl text-start font-bold text-gray-900">My Wallet</h2>
+                  <p className="text-gray-600 mt-1">View your wallet balance and transaction history</p>
+                </div>
+              </div>
+
+              {isLoadingWallet ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
+                </div>
+              ) : walletData ? (
+                <div className="space-y-6">
+                  {/* Balance Card */}
+                  <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl shadow-xl p-8 text-white">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-blue-100 text-sm font-medium mb-2">Available Balance</p>
+                        <h3 className="text-4xl font-bold">₹{walletData.wallet?.balance?.toLocaleString('en-IN') || '0'}</h3>
+                      </div>
+                      <Wallet className="w-16 h-16 opacity-20" />
+                    </div>
+                  </div>
+
+                  {/* Transactions Table */}
+                  <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
+                    <div className="p-6 border-b border-gray-200 space-y-4">
+                      <div>
+                        <h3 className="text-xl font-semibold text-gray-900">Transaction History</h3>
+                        <p className="text-gray-600 text-sm mt-1">Filter and browse your wallet activity</p>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+                        <select
+                          value={walletTypeFilter}
+                          onChange={(e) => setWalletTypeFilter(e.target.value as 'credit' | 'debit' | '')}
+                          className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                        >
+                          <option value="">All Types</option>
+                          <option value="credit">Credit</option>
+                          <option value="debit">Debit</option>
+                        </select>
+                        <input
+                          type="date"
+                          value={walletStartDate}
+                          onChange={(e) => setWalletStartDate(e.target.value)}
+                          className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                        />
+                        <input
+                          type="date"
+                          value={walletEndDate}
+                          onChange={(e) => setWalletEndDate(e.target.value)}
+                          className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                        />
+                        <button
+                          onClick={handleWalletApplyFilters}
+                          className="bg-blue-600 text-white rounded-lg px-3 py-2 text-sm hover:bg-blue-700 transition-colors"
+                        >
+                          Apply Filters
+                        </button>
+                        <button
+                          onClick={handleWalletClearFilters}
+                          className="bg-gray-200 text-gray-700 rounded-lg px-3 py-2 text-sm hover:bg-gray-300 transition-colors"
+                        >
+                          Clear Filters
+                        </button>
+                      </div>
+                    </div>
+
+                    {walletData.transactions && walletData.transactions.length > 0 ? (
+                      <>
+                        <div className="overflow-x-auto">
+                          <table className="w-full">
+                            <thead className="bg-gray-50 border-b border-gray-200">
+                              <tr>
+                                <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Type</th>
+                                <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Description</th>
+                                <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Amount</th>
+                                <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Status</th>
+                                <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Date</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-200">
+                              {walletData.transactions.map((transaction: WalletTransaction, index: number) => (
+                                <tr key={index} className="hover:bg-gray-50 transition-colors">
+                                  <td className="px-6 py-4">
+                                    <div className="flex items-center space-x-2">
+                                      {transaction.type === 'credit' ? (
+                                        <>
+                                          <div className="p-2 bg-green-100 rounded-lg">
+                                            <ArrowDownLeft className="w-4 h-4 text-green-600" />
+                                          </div>
+                                          <span className="text-sm font-semibold text-green-600">Credit</span>
+                                        </>
+                                      ) : (
+                                        <>
+                                          <div className="p-2 bg-red-100 rounded-lg">
+                                            <ArrowUpRight className="w-4 h-4 text-red-600" />
+                                          </div>
+                                          <span className="text-sm font-semibold text-red-600">Debit</span>
+                                        </>
+                                      )}
+                                    </div>
+                                  </td>
+                                  <td className="px-6 py-4">
+                                    <p className="text-sm text-gray-700">{transaction.description}</p>
+                                  </td>
+                                  <td className="px-6 py-4">
+                                    <p className={`text-sm font-semibold ${transaction.type === 'credit' ? 'text-green-600' : 'text-red-600'}`}>
+                                      {transaction.type === 'credit' ? '+' : '-'}₹{transaction.amount?.toLocaleString('en-IN') || '0'}
+                                    </p>
+                                  </td>
+                                  <td className="px-6 py-4">
+                                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                                      transaction.status === 'completed' 
+                                        ? 'bg-green-100 text-green-700' 
+                                        : transaction.status === 'pending'
+                                        ? 'bg-yellow-100 text-yellow-700'
+                                        : 'bg-red-100 text-red-700'
+                                    }`}>
+                                      {transaction.status?.charAt(0).toUpperCase() + transaction.status?.slice(1) || 'Unknown'}
+                                    </span>
+                                  </td>
+                                  <td className="px-6 py-4">
+                                    <p className="text-sm text-gray-600">
+                                      {new Date(transaction.date).toLocaleDateString('en-IN', { 
+                                        year: 'numeric', 
+                                        month: 'short', 
+                                        day: 'numeric' 
+                                      })}
+                                    </p>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                        <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between text-sm text-gray-600">
+                          <span>
+                            Showing {((walletData.pagination.currentPage - 1) * walletData.pagination.limit) + 1} to {Math.min(walletData.pagination.currentPage * walletData.pagination.limit, walletData.pagination.totalItems)} of {walletData.pagination.totalItems} transactions
+                          </span>
+                          <div className="flex items-center gap-2">
+                            <button
+                              disabled={walletData.pagination.currentPage <= 1}
+                              onClick={() => handleWalletPageChange('prev')}
+                              className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            >
+                              Previous
+                            </button>
+                            <span className="px-3 py-2 text-sm font-medium">
+                              Page {walletData.pagination.currentPage} of {walletData.pagination.totalPages}
+                            </span>
+                            <button
+                              disabled={walletData.pagination.currentPage >= walletData.pagination.totalPages}
+                              onClick={() => handleWalletPageChange('next')}
+                              className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            >
+                              Next
+                            </button>
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="px-6 py-12 text-center">
+                        <Wallet className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                        <h3 className="text-xl font-semibold text-gray-900 mb-2">No Transactions</h3>
+                        <p className="text-gray-600">You don't have any transactions yet.</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-12 text-center">
+                  <AlertCircle className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">Unable to Load Wallet</h3>
+                  <p className="text-gray-600">Please try again later.</p>
+                </div>
+              )}
             </>
           )}
           </div>
