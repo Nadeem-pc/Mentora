@@ -27,6 +27,9 @@ import PaymentCancel from "@/pages/client/PaymentCancel";
 import MentalHealthPlatform from "@/pages/client/Home";
 import SlotManagement from "@/pages/therapist/ManageSlots";
 import TherapistAppointments from "@/pages/therapist/Appointments";
+import ClientChatPage from "@/pages/client/ChatPage";
+import TherapistChatDashboard from "@/pages/therapist/ChatDashboard";
+import AppointmentDetailPage from "@/pages/therapist/AppointmentDetail";
 
 export const router = createBrowserRouter([
     {
@@ -58,6 +61,9 @@ export const router = createBrowserRouter([
     },
     {
         path: '/profile',  element: <ProtectedRoute allowedRoles={['client']}> <UserProfilePage /> </ProtectedRoute>
+    },
+    {
+        path: '/client/chat/:therapistId', element: <ProtectedRoute allowedRoles={['client']}> <ClientChatPage /> </ProtectedRoute>
     },
     {
         path: '/therapists', element: <ProtectedRoute allowedRoles={['client']}> <TherapistListing/> </ProtectedRoute>
@@ -117,6 +123,12 @@ export const router = createBrowserRouter([
             },
             {
                 path: 'appointments', element: <TherapistAppointments/>
+            },
+            {
+                path: 'chat', element: <TherapistChatDashboard />
+            },
+            {
+                path: 'appointments/:appointmentId', element: <AppointmentDetailPage/>
             }
         ]
     },
