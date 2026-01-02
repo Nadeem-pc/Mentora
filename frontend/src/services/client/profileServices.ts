@@ -20,6 +20,9 @@ interface Appointment {
   };
   appointmentDate: string;
   status: "scheduled" | "completed" | "cancelled";
+  consultationMode?: "video" | "audio";
+  issue?: string;
+  sessionFee?: number;
   notes?: string;
   cancelReason?: string;
   createdAt: string;
@@ -33,6 +36,29 @@ export const clientProfileService = {
       return data;
     } catch (error) {
       console.error(error);
+      throw error;
+    }
+  },
+
+  getAppointmentDetail: async (appointmentId: string) => {
+    try {
+      const { data } = await axiosInstance.get(API.CLIENT.GET_APPOINTMENT_DETAIL(appointmentId));
+      return data;
+    } catch (error) {
+      console.error('Error fetching appointment detail:', error);
+      throw error;
+    }
+  },
+
+  submitAppointmentFeedback: async (appointmentId: string, rating: number, review: string) => {
+    try {
+      const { data } = await axiosInstance.post(
+        API.CLIENT.SUBMIT_APPOINTMENT_FEEDBACK(appointmentId),
+        { rating, review }
+      );
+      return data;
+    } catch (error) {
+      console.error('Error submitting appointment feedback:', error);
       throw error;
     }
   },
