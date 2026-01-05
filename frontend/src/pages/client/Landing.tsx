@@ -8,9 +8,9 @@ import Testimonials from "@/components/client/Testimonials"
 
 const Landing = () => {
   return (
-    <div className="min-h-screen w-screen bg-gray-50">
+    <div className="min-h-screen w-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30 overflow-x-hidden">
       <Header />
-      <main>
+      <main className="scroll-smooth">
         <HeroSection />
         <Features />
         <About />
