@@ -49,7 +49,7 @@ const About: React.FC = () => {
       ),
       title: "Evidence-Based Approach",
       description: "We use proven therapeutic methods and techniques backed by scientific research.",
-      gradient: "from-purple-500 to-pink-500"
+      gradient: "from-teal-500 to-cyan-500"
     },
     {
       icon: (
@@ -64,10 +64,10 @@ const About: React.FC = () => {
   ];
 
   return (
-    <section id="about" className="relative py-24 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-800 dark:via-gray-900 dark:to-gray-800 overflow-hidden">
+    <section id="about" className="relative py-24 bg-gradient-to-br from-blue-50 via-cyan-50 to-teal-50 dark:from-gray-800 dark:via-gray-900 dark:to-gray-800 overflow-hidden">
       {/* Background Decorations */}
       <div className="absolute inset-0">
-        <div className="absolute top-0 left-0 w-96 h-96 bg-gradient-to-br from-blue-200/30 to-purple-200/30 rounded-full blur-3xl"></div>
+        <div className="absolute top-0 left-0 w-96 h-96 bg-gradient-to-br from-blue-200/30 to-teal-200/30 rounded-full blur-3xl"></div>
         <div className="absolute bottom-0 right-0 w-96 h-96 bg-gradient-to-br from-green-200/30 to-teal-200/30 rounded-full blur-3xl"></div>
       </div>
 
@@ -81,7 +81,7 @@ const About: React.FC = () => {
         >
           <h2 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-gray-900 dark:text-white mb-6">
             Why Choose
-            <span className="block text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-purple-600 to-teal-500">
+            <span className="block text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-cyan-600 to-teal-600">
               Mentora?
             </span>
           </h2>
@@ -150,7 +150,7 @@ const About: React.FC = () => {
                 />
               </motion.div>
               
-              <h3 className="relative text-xl font-bold text-gray-900 dark:text-white mb-3 text-center group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-blue-600 group-hover:to-purple-600 transition-all duration-300">
+              <h3 className="relative text-xl font-bold text-gray-900 dark:text-white mb-3 text-center group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-blue-600 group-hover:to-teal-600 transition-all duration-300">
                 {reason.title}
               </h3>
               <p className="relative text-gray-600 dark:text-gray-300 leading-relaxed text-center">
