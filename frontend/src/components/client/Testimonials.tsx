@@ -1,6 +1,9 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useInView } from 'framer-motion';
+import sarahImg from "@/assets/sarah.avif";
+import jamesImg from "@/assets/james.avif";
+import emilyImg from "@/assets/emily.avif";
 
 interface Testimonial {
   name: string;
@@ -16,21 +19,21 @@ const testimonials: Testimonial[] = [
     content: "Mentora helped me overcome my anxiety and develop healthy coping strategies. The therapists are incredibly supportive and understanding.",
     rating: 5,
     avatar: "SM",
-    imageUrl: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=100&w=400&auto=format&fit=crop&ixlib=rb-4.0.3"
+    imageUrl: sarahImg
   },
   {
     name: "James L.",
     content: "The flexible scheduling made it possible for me to get help while managing my studies. My therapist really understood my challenges.",
     rating: 5,
     avatar: "JL",
-    imageUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=100&w=400&auto=format&fit=crop&ixlib=rb-4.0.3"
+    imageUrl: jamesImg
   },
   {
     name: "Emily R.",
     content: "Finding time for therapy as a busy parent seemed impossible until I found Mentora. The online sessions fit perfectly into my schedule.",
     rating: 5,
     avatar: "ER",
-    imageUrl: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?q=100&w=400&auto=format&fit=crop&ixlib=rb-4.0.3"
+    imageUrl: emilyImg
   }
 ];
 
