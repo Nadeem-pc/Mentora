@@ -74,7 +74,7 @@ const Testimonials: React.FC = () => {
         >
           <h2 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-gray-900 dark:text-white mb-6">
             What Our Clients
-            <span className="block text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
+            <span className="block text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-teal-600">
               Say About Us
             </span>
           </h2>
@@ -99,7 +99,7 @@ const Testimonials: React.FC = () => {
             >
               {/* Subtle gradient overlay on hover */}
               <motion.div 
-                className="absolute inset-0 bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-blue-950 dark:via-purple-950 dark:to-pink-950 rounded-3xl"
+                className="absolute inset-0 bg-gradient-to-br from-blue-50 via-cyan-50 to-teal-50 dark:from-blue-950 dark:via-cyan-950 dark:to-teal-950 rounded-3xl"
                 initial={{ opacity: 0 }}
                 whileHover={{ opacity: 0.3 }}
                 transition={{ duration: 0.5 }}
@@ -152,7 +152,7 @@ const Testimonials: React.FC = () => {
                   transition={{ duration: 0.3 }}
                 >
                   <svg 
-                    className="w-10 h-10 text-transparent fill-transparent stroke-2 stroke-purple-400" 
+                    className="w-10 h-10 text-transparent fill-transparent stroke-2 stroke-teal-400" 
                     viewBox="0 0 24 24"
                   >
                     <path 
