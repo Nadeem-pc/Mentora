@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import profile_avatar from '../../assets/pngtree-avatar-icon-profile-icon-member-login-vector-isolated-png-image_5247852-removebg-preview.png';
-import { User, Edit3, Camera, Mail, Phone, Calendar, LogOut, X, Clock, Video, CheckCircle, XCircle, CalendarDays, IndianRupee, AlertCircle, Ban, Wallet, ArrowUpRight, ArrowDownLeft } from 'lucide-react';
+import { User, Edit3, Camera, Mail, Phone, Calendar, LogOut, X, Clock, Video, CheckCircle, XCircle, CalendarDays, IndianRupee, AlertCircle, Ban, Wallet, ArrowUpRight, ArrowDownLeft, Star } from 'lucide-react';
 import { toast } from 'sonner';
 import ImageCropper from '@/components/shared/ImageCropper';
 import { S3BucketUtil } from '@/utils/S3Bucket.util';
@@ -11,6 +11,9 @@ import type { UserProfile } from '@/types/dtos/user.dto';
 import ConfirmationModal from '@/components/shared/Modal';
 import { walletService } from '@/services/shared/walletService';
 import Header from '@/components/client/Header';
+import { useAuth } from '@/contexts/auth.context';
+import SessionVideoCall from '@/components/client/SessionVideoCall';
+import { getSocket } from '@/config/socket.config';
 
 interface ValidationErrors {
   firstName?: string;
@@ -53,7 +56,38 @@ interface WalletData {
   };
 }
 
+interface AppointmentDetail {
+  _id: string;
+  therapistId: {
+    _id: string;
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+    profileImg?: string | null;
+  };
+  slotId: {
+    _id: string;
+    time: string;
+    fees: number;
+    consultationModes: string[];
+  };
+  appointmentDate: string;
+  appointmentTime: string;
+  consultationMode: "video" | "audio";
+  status: "scheduled" | "completed" | "cancelled";
+  issue?: string;
+  notes?: string;
+  sessionFee?: number;
+  paymentMethod: "wallet" | "stripe" | "unknown";
+  feedback?: {
+    rating: number;
+    review: string;
+    createdAt: string;
+  } | null;
+}
+
 const UserProfilePage: React.FC = () => {
+  const { user } = useAuth();
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [activeSection, setActiveSection] = useState('Personal Details');
   const [isEditing, setIsEditing] = useState(false);
@@ -68,6 +102,14 @@ const UserProfilePage: React.FC = () => {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [isLoadingAppointments, setIsLoadingAppointments] = useState(false);
   const [appointmentFilter, setAppointmentFilter] = useState<'all' | 'upcoming' | 'past'>('all');
+  const [selectedAppointmentDetail, setSelectedAppointmentDetail] = useState<AppointmentDetail | null>(null);
+  const [selectedAppointmentIdForDetail, setSelectedAppointmentIdForDetail] = useState<string | null>(null);
+  const [isLoadingAppointmentDetail, setIsLoadingAppointmentDetail] = useState(false);
+  const [appointmentDetailError, setAppointmentDetailError] = useState<string | null>(null);
+  const [rating, setRating] = useState<number>(0);
+  const [hoverRating, setHoverRating] = useState<number>(0);
+  const [review, setReview] = useState<string>('');
+  const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
   
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
@@ -87,6 +129,12 @@ const UserProfilePage: React.FC = () => {
   const [walletStartDate, setWalletStartDate] = useState('');
   const [walletEndDate, setWalletEndDate] = useState('');
 
+  const [isVideoCallOpen, setIsVideoCallOpen] = useState(false);
+  const [activeCallTherapistId, setActiveCallTherapistId] = useState<string | null>(null);
+  const [activeCallAppointmentId, setActiveCallAppointmentId] = useState<string | null>(null);
+  const [endedAppointments, setEndedAppointments] = useState<Record<string, boolean>>({});
+  const [joinCountdowns, setJoinCountdowns] = useState<Record<string, number>>({});
+
   const navigate = useNavigate();
 
   const cancelReasons = [
@@ -96,6 +144,81 @@ const UserProfilePage: React.FC = () => {
     'Found another therapist',
     'Other'
   ];
+
+  const parseAppointmentDateTime = (dateStr: string, timeStr: string | undefined): Date | null => {
+    const baseDate = new Date(dateStr);
+    if (isNaN(baseDate.getTime())) return null;
+
+    if (!timeStr) return baseDate;
+
+    const trimmed = timeStr.trim();
+    if (!trimmed) return baseDate;
+
+    let hours = 0;
+    let minutes = 0;
+    let isPM = false;
+    let hasAmPm = false;
+
+    const amPmMatch = trimmed.match(/(am|pm)$/i);
+    if (amPmMatch) {
+      hasAmPm = true;
+      isPM = amPmMatch[1].toLowerCase() === 'pm';
+    }
+
+    const cleaned = trimmed.replace(/(am|pm)/i, '').trim();
+    const [hStr, mStr] = cleaned.split(':');
+    hours = parseInt(hStr || '0', 10) || 0;
+    minutes = parseInt(mStr || '0', 10) || 0;
+
+    if (hasAmPm) {
+      if (hours === 12) {
+        hours = isPM ? 12 : 0;
+      } else if (isPM) {
+        hours += 12;
+      }
+    }
+
+    baseDate.setHours(hours, minutes, 0, 0);
+    return baseDate;
+  };
+
+  const formatJoinCountdown = (ms: number): string => {
+    if (ms <= 0) return 'Starting soon';
+
+    const totalSeconds = Math.floor(ms / 1000);
+    const days = Math.floor(totalSeconds / 86400);
+    const hours = Math.floor((totalSeconds % 86400) / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+
+    if (days > 0) {
+      return `${days}d ${hours}h ${minutes}m ${seconds}s left`;
+    }
+
+    return `${hours}h ${minutes}m ${seconds}s left`;
+  };
+
+  useEffect(() => {
+    if (!appointments || appointments.length === 0) return;
+
+    const updateCountdowns = () => {
+      const now = Date.now();
+      const next: Record<string, number> = {};
+
+      appointments.forEach((apt) => {
+        const start = parseAppointmentDateTime(apt.appointmentDate, apt.slotId?.time);
+        if (!start) return;
+        const joinOpenTime = start.getTime() - 10 * 60 * 1000;
+        next[apt._id] = joinOpenTime - now;
+      });
+
+      setJoinCountdowns(next);
+    };
+
+    updateCountdowns();
+    const intervalId = window.setInterval(updateCountdowns, 1000);
+    return () => window.clearInterval(intervalId);
+  }, [appointments]);
 
   const handleCancelClick = (appointment: Appointment) => {
     setSelectedAppointment(appointment);
@@ -422,6 +545,76 @@ const UserProfilePage: React.FC = () => {
     }
   };
 
+  const handleViewDetails = async (appointmentId: string) => {
+    try {
+      setSelectedAppointmentIdForDetail(appointmentId);
+      setIsLoadingAppointmentDetail(true);
+      setAppointmentDetailError(null);
+      setSelectedAppointmentDetail(null);
+
+      const response = await clientProfileService.getAppointmentDetail(appointmentId);
+      const rawDetail = (response as { data?: AppointmentDetail }).data ?? (response as AppointmentDetail);
+
+      const detail: AppointmentDetail = {
+        ...rawDetail,
+        paymentMethod: (rawDetail.paymentMethod ?? "unknown") as AppointmentDetail["paymentMethod"],
+      };
+
+      setSelectedAppointmentDetail(detail);
+
+      if (detail.feedback) {
+        setRating(detail.feedback.rating);
+        setReview(detail.feedback.review);
+      } else {
+        setRating(0);
+        setReview('');
+      }
+      setHoverRating(0);
+    } catch (error) {
+      console.error("Error loading appointment detail:", error);
+      setAppointmentDetailError("Failed to load appointment details");
+    } finally {
+      setIsLoadingAppointmentDetail(false);
+    }
+  };
+
+  const handleSubmitFeedback = async () => {
+    if (!selectedAppointmentDetail || !selectedAppointmentIdForDetail) return;
+
+    if (rating < 1 || rating > 5) {
+      toast.error('Please select a rating');
+      return;
+    }
+
+    try {
+      setIsSubmittingFeedback(true);
+      const response = await clientProfileService.submitAppointmentFeedback(
+        selectedAppointmentIdForDetail,
+        rating,
+        review.trim()
+      );
+
+      if (response.success) {
+        toast.success(response.message || 'Feedback submitted');
+        const newFeedback = {
+          rating,
+          review: review.trim(),
+          createdAt: new Date().toISOString(),
+        };
+        setSelectedAppointmentDetail(prev => prev ? { ...prev, feedback: newFeedback } : prev);
+      }
+    } catch (err: unknown) {
+      let msg = 'Failed to submit feedback';
+      if (err && typeof err === 'object' && 'response' in err) {
+        const response = (err as { response?: { data?: { message?: string } } }).response;
+        msg = response?.data?.message || msg;
+      }
+      toast.error(msg);
+    } finally {
+      setIsSubmittingFeedback(false);
+    }
+  };
+
   const handleChange = (field: string, value: string) => {
     setFormData((prev) => prev ? { ...prev, [field]: value } : null);
     
@@ -724,6 +917,32 @@ const UserProfilePage: React.FC = () => {
         <Icon className="w-4 h-4 mr-1" />
         {status.charAt(0).toUpperCase() + status.slice(1)}
       </span>
+    );
+  };
+
+  const renderStars = (value: number, editable: boolean) => {
+    const current = editable ? hoverRating || value : value;
+
+    return (
+      <div className="flex items-center space-x-1">
+        {[1, 2, 3, 4, 5].map((star) => (
+          <button
+            key={star}
+            type="button"
+            disabled={!editable}
+            onClick={editable ? () => setRating(star) : undefined}
+            onMouseEnter={editable ? () => setHoverRating(star) : undefined}
+            onMouseLeave={editable ? () => setHoverRating(0) : undefined}
+            className={`p-1 ${editable ? 'cursor-pointer' : 'cursor-default'}`}
+          >
+            <Star
+              className={`w-5 h-5 ${
+                star <= current ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'
+              }`}
+            />
+          </button>
+        ))}
+      </div>
     );
   };
 
@@ -1055,7 +1274,16 @@ const UserProfilePage: React.FC = () => {
                     <p className="text-gray-600">You don't have any {appointmentFilter !== 'all' ? appointmentFilter : ''} appointments yet.</p>
                   </div>
                 ) : (
-                  appointments.map((appointment) => (
+                  appointments.map((appointment) => {
+                    const joinCountdown = joinCountdowns[appointment._id] ?? 0;
+                    const canJoinNow = joinCountdown <= 0;
+                    const joinLabel = canJoinNow
+                      ? endedAppointments[appointment._id]
+                        ? 'Rejoin'
+                        : 'Join Video Session'
+                      : `Join in ${formatJoinCountdown(joinCountdown)}`;
+
+                    return (
                     <div key={appointment._id} className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden hover:shadow-2xl transition-all duration-200">
                       <div className="p-6">
                         <div className="flex items-start justify-between">
@@ -1132,6 +1360,41 @@ const UserProfilePage: React.FC = () => {
                               </button>
                             )}
 
+                            {appointment.status === 'scheduled' &&
+                              (
+                                appointment.consultationMode === 'video' ||
+                                appointment.slotId?.consultationModes?.includes('video')
+                              ) && (
+                                <button
+                                  disabled={!canJoinNow}
+                                  onClick={() => {
+                                    if (!canJoinNow) return;
+                                    setActiveCallTherapistId(appointment.therapistId._id);
+                                    setActiveCallAppointmentId(appointment._id);
+                                    setIsVideoCallOpen(true);
+
+                                    if (user) {
+                                      const socket = getSocket();
+                                      const displayName = `${userProfile?.firstName || ''} ${userProfile?.lastName || ''}`.trim() || 'Client';
+                                      const scheduledTime = appointment.slotId?.time || '';
+
+                                      socket.emit('meeting_joined', {
+                                        clientId: user.id,
+                                        therapistId: appointment.therapistId._id,
+                                        appointmentId: appointment._id,
+                                        joinedRole: 'client',
+                                        joinedUserName: displayName,
+                                        scheduledTime,
+                                      });
+                                    }
+                                  }}
+                                  className="flex items-center space-x-1 px-3 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-lg text-sm font-semibold transition-all border border-emerald-200 disabled:opacity-60 disabled:cursor-not-allowed"
+                                >
+                                  <Video className="w-4 h-4" />
+                                  <span>{joinLabel}</span>
+                                </button>
+                              )}
+
                             {appointment.status === 'scheduled' && (
                               <button
                                 onClick={() => handleCancelClick(appointment)}
@@ -1141,11 +1404,107 @@ const UserProfilePage: React.FC = () => {
                                 <span>Cancel</span>
                               </button>
                             )}
+
+                            <button
+                              onClick={() => handleViewDetails(appointment._id)}
+                              className="flex items-center space-x-1 px-3 py-1 bg-white hover:bg-gray-50 text-gray-700 rounded-lg text-sm font-semibold transition-all border border-gray-200"
+                            >
+                              <span>View Details</span>
+                            </button>
                           </div>
                         </div>
+
+                        {selectedAppointmentIdForDetail === appointment._id && (
+                          <div className="mt-4 w-full">
+                            {isLoadingAppointmentDetail && (
+                              <div className="flex items-center justify-center py-4">
+                                <div className="animate-spin rounded-full h-8 w-8 border-2 border-emerald-500 border-t-transparent" />
+                              </div>
+                            )}
+
+                            {!isLoadingAppointmentDetail && appointmentDetailError && (
+                              <div className="flex items-center gap-2 px-4 py-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700 mt-2">
+                                <AlertCircle className="w-4 h-4" />
+                                <span>{appointmentDetailError}</span>
+                              </div>
+                            )}
+
+                            {!isLoadingAppointmentDetail && selectedAppointmentDetail && (
+                              <div className="mt-4 bg-white border border-emerald-100 rounded-xl p-4 shadow-sm space-y-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-700">
+                                  <div>
+                                    <p className="text-xs text-gray-500 mb-1">Payment Method</p>
+                                    <p className="font-medium">
+                                      {selectedAppointmentDetail.paymentMethod === "wallet"
+                                        ? "Wallet"
+                                        : selectedAppointmentDetail.paymentMethod === "stripe"
+                                        ? "Card / Stripe"
+                                        : "Unknown"}
+                                    </p>
+                                  </div>
+
+                                  {selectedAppointmentDetail.feedback && (
+                                    <div>
+                                      <p className="text-xs text-gray-500 mb-1">Your Rating</p>
+                                      <p className="font-medium">
+                                        {selectedAppointmentDetail.feedback.rating}/5
+                                      </p>
+                                      {selectedAppointmentDetail.feedback.review && (
+                                        <p className="mt-1 text-xs text-gray-600">
+                                          "{selectedAppointmentDetail.feedback.review}"
+                                        </p>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+
+                                {appointment.status === 'completed' && (
+                                  <div className="pt-3 border-t border-emerald-100 space-y-3">
+                                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+                                      <div>
+                                        <h3 className="text-sm font-semibold text-gray-900">Rate Your Session</h3>
+                                        <p className="text-xs text-gray-600">How was your experience with this session?</p>
+                                      </div>
+                                      {renderStars(
+                                        selectedAppointmentDetail.feedback ? selectedAppointmentDetail.feedback.rating : rating,
+                                        !selectedAppointmentDetail.feedback
+                                      )}
+                                    </div>
+
+                                    <div className="space-y-2">
+                                      <label className="text-xs font-medium text-gray-700">Write a review (optional)</label>
+                                      <textarea
+                                        value={review}
+                                        onChange={(e) => setReview(e.target.value)}
+                                        disabled={Boolean(selectedAppointmentDetail.feedback)}
+                                        placeholder="Share your experience with this session..."
+                                        className="w-full min-h-[80px] p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm disabled:bg-gray-100 disabled:text-gray-500"
+                                      />
+                                    </div>
+
+                                    {!selectedAppointmentDetail.feedback && (
+                                      <button
+                                        onClick={handleSubmitFeedback}
+                                        disabled={isSubmittingFeedback}
+                                        className="w-full md:w-auto px-4 py-2 rounded-lg text-white font-semibold bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 disabled:opacity-60 disabled:cursor-not-allowed text-sm shadow-md hover:shadow-lg transition-all"
+                                      >
+                                        {isSubmittingFeedback ? 'Submitting...' : 'Submit Review'}
+                                      </button>
+                                    )}
+
+                                    {selectedAppointmentDetail.feedback && (
+                                      <p className="text-xs text-gray-500">Thank you for sharing your feedback.</p>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
-                  ))
+                  );
+                  })
                 )}
               </div>
             </>
@@ -1335,6 +1694,29 @@ const UserProfilePage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Session Video Call Modal */}
+      {isVideoCallOpen && activeCallTherapistId && user && (
+        <SessionVideoCall
+          isOpen={isVideoCallOpen}
+          clientId={user.id}
+          therapistId={activeCallTherapistId}
+          localRole="client"
+          onClose={() => {
+            setIsVideoCallOpen(false);
+            setActiveCallTherapistId(null);
+            setActiveCallAppointmentId(null);
+          }}
+          onClientEnd={() => {
+            if (activeCallAppointmentId) {
+              setEndedAppointments((prev) => ({
+                ...prev,
+                [activeCallAppointmentId]: true,
+              }));
+            }
+          }}
+        />
+      )}
 
       {/* Cancel Appointment Modal */}
       <ConfirmationModal
