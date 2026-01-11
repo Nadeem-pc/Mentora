@@ -30,6 +30,8 @@ import TherapistAppointments from "@/pages/therapist/Appointments";
 import ClientChatPage from "@/pages/client/ChatPage";
 import TherapistChatDashboard from "@/pages/therapist/ChatDashboard";
 import AppointmentDetailPage from "@/pages/therapist/AppointmentDetail";
+import TherapistReviewsDashboard from "@/pages/therapist/Review";
+import SubscriptionAdminPage from "@/pages/admin/Subscription";
 
 export const router = createBrowserRouter([
     {
@@ -100,6 +102,9 @@ export const router = createBrowserRouter([
             {
                 path: 'wallet', element: <TherapistEarnings/>
             },
+            {
+                path: 'subscription', element: <SubscriptionAdminPage/>
+            },
         ]
     },
 
@@ -129,6 +134,9 @@ export const router = createBrowserRouter([
             },
             {
                 path: 'appointments/:appointmentId', element: <AppointmentDetailPage/>
+            }, 
+            {
+                path: 'reviews', element: <TherapistReviewsDashboard/>
             }
         ]
     },
