@@ -1,11 +1,14 @@
 import { useEffect, useState } from 'react';
-import { ChevronLeft, MessageSquare, Video, Phone, Calendar, Briefcase, GraduationCap, Loader2, X } from 'lucide-react';
+import { ChevronLeft, MessageSquare, Video, Phone, Calendar, Briefcase, GraduationCap, Loader2, X, Languages, Award, Clock } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useParams } from 'react-router-dom';
 import { axiosInstance } from '@/config/axios.config';
 import { clientTherapistService } from '@/services/client/clientTherapistService';
 import { env } from '@/config/env.config';
 import { toast } from 'sonner';
-import { API } from '@/constants/api.constant';
+import { PaymentMethodModal } from '@/components/client/PaymentMethodModal';
+import { paymentService } from '@/services/client/paymentService';
+import Header from '@/components/client/Header';
 
 interface WeeklySlot {
   _id?: string;
@@ -64,6 +67,8 @@ export default function TherapistDetailPage() {
   const [availableDates, setAvailableDates] = useState<AvailableDate[]>([]);
   const [customDateSlots, setCustomDateSlots] = useState<WeeklySlot[]>([]);
   const [isLoadingDates, setIsLoadingDates] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [sessionPrice, setSessionPrice] = useState(0);
 
   const navigate = useNavigate();
   const { therapistId } = useParams<{ therapistId: string }>();
@@ -148,9 +153,10 @@ useEffect(() => {
       } else {
         setError('Failed to load therapist details');
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error fetching therapist details:', err);
-      setError(err.message || 'Failed to load therapist details');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load therapist details';
+      setError(errorMessage);
     } finally {
       setIsLoadingTherapist(false);
     }
@@ -362,33 +368,101 @@ useEffect(() => {
         return;
       }
 
+      // Set session price and show payment modal
+      setSessionPrice(slotObj.price);
+      setShowPaymentModal(true);
+    } catch (error) {
+      console.error('Payment error:', error);
+      toast.error('Failed to process payment. Please try again.');
+    }
+  };
+
+  const handleWalletPayment = async () => {
+    try {
+      if (!selectedSlot || !therapistId) {
+        toast.error('Invalid selection. Please try again.');
+        return;
+      }
+
+      const lastDashIndex = selectedSlot.lastIndexOf('-');
+      const date = selectedSlot.substring(0, lastDashIndex);
+      const time = selectedSlot.substring(lastDashIndex + 1);
+
+      const response = await paymentService.payWithWallet({
+        therapistId,
+        consultationMode: selectedMode === 'video' ? 'Video' : 'Audio',
+        selectedDate: date,
+        selectedTime: time,
+        price: sessionPrice
+      });
+
+      if (response.success) {
+        toast.success('Appointment booked successfully!');
+        setShowPaymentModal(false);
+        // Reset form
+        setSelectedSlot('');
+        setSelectedDate('');
+        setSelectedMode('video');
+        // Navigate to appointments or dashboard
+        setTimeout(() => {
+          navigate('/profile');
+        }, 1500);
+      } else {
+        toast.error(response.message || 'Payment failed. Please try again.');
+      }
+    } catch (error: unknown) {
+      console.error('Wallet payment error:', error);
+      let errorMessage = 'Wallet payment failed. Please try again.';
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (typeof error === 'object' && error !== null && 'response' in error) {
+        const errResponse = error as { response?: { data?: { message?: string } } };
+        errorMessage = errResponse.response?.data?.message || errorMessage;
+      }
+      toast.error(errorMessage);
+    }
+  };
+
+  const handleStripePayment = async () => {
+    try {
+      if (!selectedSlot || !therapistId) {
+        toast.error('Invalid selection. Please try again.');
+        return;
+      }
+
+      const lastDashIndex = selectedSlot.lastIndexOf('-');
+      const date = selectedSlot.substring(0, lastDashIndex);
+      const time = selectedSlot.substring(lastDashIndex + 1);
+
       if (!env.STRIPE_PUBLISHABLE_KEY) {
         toast.error('Payment configuration error. Please contact support.');
         return;
       }
 
-      const response = await axiosInstance.post(API.CLIENT.CREATE_CHECKOUT_SESSION, {
-        therapistId: therapistId,
+      const response = await paymentService.createCheckoutSession({
+        therapistId,
         consultationMode: selectedMode === 'video' ? 'Video' : 'Audio',
         selectedDate: date,
         selectedTime: time,
-        price: slotObj.price
+        price: sessionPrice
       });
 
       if (response.data?.url) {
         window.location.href = response.data.url;
-      } else if (response.data?.data?.url) {
-        window.location.href = response.data.data.url;
-      } else if (response.data?.success && response.data?.data?.url) {
-        window.location.href = response.data.data.url;
+      } else if (response.url) {
+        window.location.href = response.url;
       } else {
-        console.error('Unexpected response structure:', response.data);
         toast.error('Failed to create payment session');
       }
-    } catch (error: any) {
-      console.error('Payment error:', error);
-      console.error('Error response:', error.response?.data);
-      const errorMessage = error.response?.data?.message || 'Failed to initiate payment. Please try again.';
+    } catch (error: unknown) {
+      console.error('Stripe payment error:', error);
+      let errorMessage = 'Failed to initiate payment. Please try again.';
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (typeof error === 'object' && error !== null && 'response' in error) {
+        const errResponse = error as { response?: { data?: { message?: string } } };
+        errorMessage = errResponse.response?.data?.message || errorMessage;
+      }
       toast.error(errorMessage);
     }
   };
@@ -398,197 +472,302 @@ useEffect(() => {
   // Loading state
 if (isLoadingTherapist) {
   return (
-    <div className="min-h-screen w-screen bg-gray-50 flex items-center justify-center">
-      <div className="text-center">
-        <Loader2 className="w-12 h-12 animate-spin text-teal-600 mx-auto mb-4" />
-        <p className="text-gray-600">Loading therapist details...</p>
+    <>
+      <Header />
+      <div className="min-h-screen w-screen bg-gradient-to-br from-blue-50 via-white to-teal-50 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center pt-16">
+        <motion.div 
+          className="text-center"
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5 }}
+        >
+          <div className="relative">
+            <div className="animate-spin rounded-full h-16 w-16 border-4 border-teal-200 border-t-teal-600 mx-auto"></div>
+            <div className="absolute inset-0 rounded-full bg-teal-400/20 blur-xl animate-pulse"></div>
+          </div>
+          <motion.p 
+            className="mt-6 text-gray-700 dark:text-gray-300 font-medium"
+            animate={{ opacity: [0.5, 1, 0.5] }}
+            transition={{ duration: 2, repeat: Infinity }}
+          >
+            Loading therapist details...
+          </motion.p>
+        </motion.div>
       </div>
-    </div>
+    </>
   );
 }
 
 // Error state
 if (error || !therapist) {
   return (
-    <div className="min-h-screen w-screen bg-gray-50 flex items-center justify-center">
-      <div className="text-center">
-        <p className="text-red-600 text-lg mb-4">{error || 'Therapist not found'}</p>
-        <button 
-          onClick={() => navigate('/therapists')}
-          className="px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
+    <>
+      <Header />
+      <div className="min-h-screen w-screen bg-gradient-to-br from-blue-50 via-white to-teal-50 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center pt-16">
+        <motion.div 
+          className="text-center max-w-md mx-auto p-8"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
         >
-          Back to Therapists
-        </button>
+          <div className="w-20 h-20 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
+            <X className="w-10 h-10 text-red-600 dark:text-red-400" />
+          </div>
+          <p className="text-red-600 dark:text-red-400 text-lg mb-6 font-medium">{error || 'Therapist not found'}</p>
+          <button 
+            onClick={() => navigate('/therapists')}
+            className="px-8 py-3 bg-gradient-to-r from-blue-600 to-teal-600 text-white rounded-xl hover:from-blue-700 hover:to-teal-700 transition-all duration-300 shadow-lg hover:shadow-xl font-semibold"
+          >
+            Back to Therapists
+          </button>
+        </motion.div>
       </div>
-    </div>
+    </>
   );
 }
 
   return (
-    <div className="min-h-screen w-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-4 py-4 md:px-8">
-        <button className="flex items-center gap-2 text-teal-600 hover:text-teal-700 font-medium" onClick={() => navigate(-1)}>
-          <ChevronLeft size={20} />
-          Back to Therapists
-        </button>
-      </div>
+    <>
+      <Header />
+      <div className="min-h-screen w-screen bg-gradient-to-br from-blue-50 via-white to-teal-50 dark:from-gray-900 dark:to-gray-800 relative overflow-hidden">
+        {/* Decorative background elements */}
+        <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-blue-200/20 to-teal-200/20 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-0 left-0 w-96 h-96 bg-gradient-to-br from-teal-200/20 to-cyan-200/20 rounded-full blur-3xl"></div>
+        
+        {/* Back Button */}
+        <div className="relative z-10 px-4 pt-24 pb-4 md:px-8">
+          {/* <motion.button 
+            className="flex items-center gap-2 text-gray-700 dark:text-gray-300 hover:text-teal-600 dark:hover:text-teal-400 font-medium transition-colors group"
+            onClick={() => navigate(-1)}
+            whileHover={{ x: -4 }}
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <ChevronLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
+            Back to Therapists
+          </motion.button> */}
+        </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-6 md:px-8 md:py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="relative z-10 max-w-7xl mx-auto px-4 pb-12 md:px-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Left Column - Main Content */}
           <div className="lg:col-span-2">
-            {/* Therapist Profile Card */}
-            <div className="bg-white text-left rounded-2xl shadow-sm p-6 mb-6">
-              <div className="flex flex-col md:flex-row gap-6">
+            {/* Enhanced Therapist Profile Card */}
+            <motion.div 
+              className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-3xl shadow-xl p-8 mb-8 border border-teal-100 dark:border-teal-900 overflow-hidden relative group"
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+            >
+              {/* Decorative gradient overlay */}
+              <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-teal-200/10 to-cyan-200/10 rounded-bl-full opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              
+              <div className="relative z-10 flex flex-col md:flex-row gap-8">
                 {/* Profile Image */}
-                <div className="flex-shrink-0">
-                  <img
-                    src={profileImageUrl || '/placeholder-avatar.png'}
-                    alt={therapist.name}
-                    className="w-32 h-32 rounded-2xl object-cover"
-                  />
+                <div className="flex-shrink-0 w-full md:w-auto">
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-gradient-to-br from-teal-400 to-cyan-400 rounded-3xl blur-xl opacity-50 group-hover:opacity-75 transition-opacity duration-300"></div>
+                    <img
+                      src={profileImageUrl || '/placeholder-avatar.png'}
+                      alt={therapist.name}
+                      className="relative w-full h-80 md:w-40 md:h-40 rounded-3xl object-cover ring-4 ring-white dark:ring-gray-700 shadow-xl"
+                    />
+                  </div>
                 </div>
 
                 {/* Profile Info */}
                 <div className="flex-1">
-                  <h1 className="text-3xl font-bold text-gray-900 mb-1">
+                  <h1 className="text-3xl text-center md:text-left md:text-4xl font-bold text-gray-900 dark:text-white mb-2 group-hover:text-teal-600 dark:group-hover:text-teal-400 transition-colors">
                     {therapist.name}
                   </h1>
-                  <p className="text-lg text-teal-600 font-medium mb-2">
+                  <p className="text-lg text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-teal-600 font-semibold mb-2">
                     {therapist.title}
                   </p>
-                  <p className="text-gray-600 mb-3">
+                  <p className="text-gray-600 dark:text-gray-400 mb-4 leading-relaxed">
                     {therapist.subtitle}
                   </p>
 
-                  <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
-                    <div className="flex items-center gap-1">
-                      <Briefcase size={16} />
-                      <span>{therapist.experience} years experience</span>
+                  <div className="flex flex-wrap items-center gap-6 text-sm mb-4">
+                    <div className="flex items-center gap-2">
+                      <Briefcase className="w-4 h-4 text-teal-600 dark:text-teal-400" />
+                      <span className="text-gray-700 dark:text-gray-300 font-medium">{therapist.experience} years experience</span>
                     </div>
-                    <div className="flex items-center gap-1">
-                      <GraduationCap size={16} />
-                      <span>{therapist.qualification}</span>
+                    <div className="flex items-center gap-2">
+                      <GraduationCap className="w-4 h-4 text-teal-600 dark:text-teal-400" />
+                      <span className="text-gray-700 dark:text-gray-300 font-medium">{therapist.qualification}</span>
                     </div>
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-4 mt-3 text-sm text-gray-600">
-                    <div className="flex items-center gap-1">
-                      <MessageSquare size={16} />
-                      <span>Languages: {therapist.languages.join(', ')}</span>
-                    </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <Languages className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                    <span className="text-gray-600 dark:text-gray-400 font-medium">
+                      {therapist.languages.join(', ')}
+                    </span>
                   </div>
                 </div>
               </div>
-            </div>
+            </motion.div>
 
-            {/* Tabs */}
-            <div className="bg-white rounded-2xl shadow-sm mb-6">
-              <div className="flex border-b border-gray-200">
+            {/* Enhanced Tabs */}
+            <motion.div 
+              className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-3xl shadow-xl border border-teal-100 dark:border-teal-900 overflow-hidden mb-8"
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+            >
+              <div className="flex border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-blue-50/50 to-teal-50/50 dark:from-gray-700/50 dark:to-gray-800/50">
                 <button
                   onClick={() => setActiveTab('about')}
-                  className={`flex-1 px-6 py-4 text-sm font-medium transition-colors ${
+                  className={`flex-1 px-6 py-4 text-sm font-semibold transition-all relative ${
                     activeTab === 'about'
-                      ? 'text-gray-900 border-b-2 border-gray-900'
-                      : 'text-gray-500 hover:text-gray-700'
+                      ? 'text-teal-600 dark:text-teal-400'
+                      : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
                   }`}
                 >
                   About Me
+                  {activeTab === 'about' && (
+                    <motion.div 
+                      className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-blue-600 to-teal-600"
+                      layoutId="activeTab"
+                      initial={false}
+                      transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                    />
+                  )}
                 </button>
                 <button
                   onClick={() => setActiveTab('reviews')}
-                  className={`flex-1 px-6 py-4 text-sm font-medium transition-colors ${
+                  className={`flex-1 px-6 py-4 text-sm font-semibold transition-all relative ${
                     activeTab === 'reviews'
-                      ? 'text-gray-900 border-b-2 border-gray-900'
-                      : 'text-gray-500 hover:text-gray-700'
+                      ? 'text-teal-600 dark:text-teal-400'
+                      : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
                   }`}
                 >
                   Reviews
+                  {activeTab === 'reviews' && (
+                    <motion.div 
+                      className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-blue-600 to-teal-600"
+                      layoutId="activeTab"
+                      initial={false}
+                      transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                    />
+                  )}
                 </button>
               </div>
 
               {/* Tab Content */}
-              <div className="p-6">
-                {activeTab === 'about' && (
-                  <div>
-                    <h2 className="text-xl text-left font-bold text-gray-900 mb-4">About Me</h2>
-                    <p className="text-gray-600 text-left leading-relaxed mb-6">
-                      {therapist.about}
-                    </p>
+              <div className="p-8">
+                <AnimatePresence mode="wait">
+                  {activeTab === 'about' && (
+                    <motion.div
+                      key="about"
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: 20 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <p className="text-gray-600 text-left dark:text-gray-400 leading-relaxed mb-8 text-lg">
+                        {therapist.about}
+                      </p>
 
-                    <h3 className="text-lg text-left font-bold text-gray-900 mb-3">Specializations</h3>
-                    <div className="flex flex-wrap gap-2">
-                      {therapist?.expertise?.map((spec, index) => (
-                        <span
-                          key={index}
-                          className="px-4 py-2 bg-teal-50 text-teal-700 rounded-lg text-sm font-medium"
-                        >
-                          {spec}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                      <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                        <Award className="w-5 h-5 text-teal-600 dark:text-teal-400" />
+                        Specializations
+                      </h3>
+                      <div className="flex flex-wrap gap-3">
+                        {therapist?.expertise?.map((spec, index) => (
+                          <motion.span
+                            key={index}
+                            className="px-4 py-2 bg-gradient-to-r from-teal-50 to-cyan-50 dark:from-teal-900/40 dark:to-cyan-900/40 text-teal-700 dark:text-teal-300 rounded-xl text-sm font-semibold border border-teal-200 dark:border-teal-700 shadow-sm"
+                            whileHover={{ scale: 1.05, y: -2 }}
+                            transition={{ type: "spring", stiffness: 400 }}
+                          >
+                            {spec}
+                          </motion.span>
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
 
-                {activeTab === 'reviews' && (
-                  <div className="text-center py-8 text-gray-500">
-                    Reviews content goes here
-                  </div>
-                )}
+                  {activeTab === 'reviews' && (
+                    <motion.div
+                      key="reviews"
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: 20 }}
+                      transition={{ duration: 0.3 }}
+                      className="text-center py-12"
+                    >
+                      <MessageSquare className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+                      <p className="text-gray-500 dark:text-gray-400 text-lg">Reviews content goes here</p>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
-            </div>
+            </motion.div>
           </div>
 
-          {/* Right Column - Booking Sidebar */}
+          {/* Right Column - Enhanced Booking Sidebar */}
           <div className="lg:col-span-1">
-            <div className="bg-white rounded-2xl shadow-sm p-6 sticky top-6">
+            <motion.div 
+              className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-3xl shadow-xl p-6 sticky top-6 border border-teal-100 dark:border-teal-900"
+              initial={{ opacity: 0, x: 30 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6, delay: 0.3 }}
+            >
               {/* Available Modes */}
               <div className="mb-6">
-                <h3 className="text-sm font-semibold text-gray-900 mb-3">
-                  What type of session would you like?
+                <h3 className="text-base font-bold text-gray-900 dark:text-white mb-4">
+                  Consultation Mode
                 </h3>
                 {isLoadingSchedule ? (
-                  <div className="flex justify-center py-4">
-                    <Loader2 className="w-6 h-6 animate-spin text-teal-600" />
+                  <div className="flex justify-center py-8">
+                    <div className="relative">
+                      <Loader2 className="w-8 h-8 animate-spin text-teal-600" />
+                      <div className="absolute inset-0 bg-teal-400/20 rounded-full blur-xl"></div>
+                    </div>
                   </div>
                 ) : availableModes.length === 0 ? (
-                  <p className="text-sm text-gray-500 text-center py-4">No consultation modes available</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-8">No consultation modes available</p>
                 ) : (
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-2 gap-3">
                     {availableModes.includes('video') && (
-                      <button
+                      <motion.button
                         onClick={() => {
                           setSelectedMode('video');
                           setSelectedSlot('');
                           setSelectedDate('');
                         }}
-                        className={`flex flex-col items-center gap-2 px-4 py-3 rounded-lg border-2 transition-all ${
+                        className={`flex flex-col items-center gap-3 px-4 py-4 rounded-xl border-2 transition-all relative overflow-hidden ${
                           selectedMode === 'video'
-                            ? 'border-teal-500 bg-teal-50'
-                            : 'border-gray-200 hover:border-gray-300'
+                            ? 'border-teal-500 bg-gradient-to-br from-teal-50 to-cyan-50 dark:from-teal-900/40 dark:to-cyan-900/40 shadow-lg'
+                            : 'border-gray-200 dark:border-gray-700 hover:border-teal-300 dark:hover:border-teal-700 bg-white dark:bg-gray-700/50'
                         }`}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
                       >
-                        <Video size={20} />
-                        <span className="text-sm font-medium">Video</span>
-                      </button>
+                        <Video className={`w-6 h-6 ${selectedMode === 'video' ? 'text-teal-600 dark:text-teal-400' : 'text-gray-600 dark:text-gray-400'}`} />
+                        <span className={`text-sm font-semibold ${selectedMode === 'video' ? 'text-teal-700 dark:text-teal-300' : 'text-gray-700 dark:text-gray-300'}`}>Video</span>
+                      </motion.button>
                     )}
                     {availableModes.includes('audio') && (
-                      <button
+                      <motion.button
                         onClick={() => {
                           setSelectedMode('audio');
                           setSelectedSlot('');
                           setSelectedDate('');
                         }}
-                        className={`flex flex-col items-center gap-2 px-4 py-3 rounded-lg border-2 transition-all ${
+                        className={`flex flex-col items-center gap-3 px-4 py-4 rounded-xl border-2 transition-all relative overflow-hidden ${
                           selectedMode === 'audio'
-                            ? 'border-teal-500 bg-teal-50'
-                            : 'border-gray-200 hover:border-gray-300'
+                            ? 'border-teal-500 bg-gradient-to-br from-teal-50 to-cyan-50 dark:from-teal-900/40 dark:to-cyan-900/40 shadow-lg'
+                            : 'border-gray-200 dark:border-gray-700 hover:border-teal-300 dark:hover:border-teal-700 bg-white dark:bg-gray-700/50'
                         }`}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
                       >
-                        <Phone size={20} />
-                        <span className="text-sm font-medium">Audio</span>
-                      </button>
+                        <Phone className={`w-6 h-6 ${selectedMode === 'audio' ? 'text-teal-600 dark:text-teal-400' : 'text-gray-600 dark:text-gray-400'}`} />
+                        <span className={`text-sm font-semibold ${selectedMode === 'audio' ? 'text-teal-700 dark:text-teal-300' : 'text-gray-700 dark:text-gray-300'}`}>Audio</span>
+                      </motion.button>
                     )}
                   </div>
                 )}
@@ -596,93 +775,131 @@ if (error || !therapist) {
 
               {/* Available Slots */}
               <div className="mb-6">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-semibold text-gray-900">
-                    Available slots
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-base font-bold text-gray-900 dark:text-white">
+                    Available Slots
                   </h3>
-                  <button 
-                    className="text-gray-400 hover:text-gray-600"
+                  <motion.button 
+                    className="p-2 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-teal-50 dark:hover:bg-teal-900/30 hover:text-teal-600 dark:hover:text-teal-400 transition-all"
                     onClick={() => setShowDatePicker(!showDatePicker)}
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
                   >
                     <Calendar size={20} />
-                  </button>
+                  </motion.button>
                 </div>
 
-                {/* Date Picker Modal */}
-                {showDatePicker && (
-                  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-lg p-6 max-w-sm w-full mx-4">
-                      <div className="flex justify-between items-center mb-4">
-                        <h3 className="text-lg font-semibold">Select Date</h3>
-                        <button onClick={() => setShowDatePicker(false)}>
-                          <X size={20} />
-                        </button>
-                      </div>
+                {/* Enhanced Date Picker Modal */}
+                <AnimatePresence>
+                  {showDatePicker && (
+                    <motion.div 
+                      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      onClick={() => setShowDatePicker(false)}
+                    >
+                      <motion.div 
+                        className="bg-white dark:bg-gray-800 rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-gray-200 dark:border-gray-700"
+                        initial={{ scale: 0.9, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        exit={{ scale: 0.9, opacity: 0 }}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div className="flex justify-between items-center mb-6">
+                          <h3 className="text-xl font-bold text-gray-900 dark:text-white">Select Date</h3>
+                          <motion.button 
+                            onClick={() => setShowDatePicker(false)}
+                            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                            whileHover={{ rotate: 90 }}
+                            whileTap={{ scale: 0.9 }}
+                          >
+                            <X size={20} className="text-gray-600 dark:text-gray-400" />
+                          </motion.button>
+                        </div>
                       
-                      <div className="mb-4">
-                        <div className="flex justify-between items-center mb-4">
-                          <button onClick={goToPreviousMonth} className="p-2 hover:bg-gray-100 rounded">
-                            <ChevronLeft size={20} />
-                          </button>
-                          <span className="font-semibold">
-                            {currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-                          </span>
-                          <button onClick={goToNextMonth} className="p-2 hover:bg-gray-100 rounded">
-                            <ChevronLeft size={20} className="rotate-180" />
-                          </button>
-                        </div>
-                        
-                        <div className="grid grid-cols-7 gap-2">
-                          {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(day => (
-                            <div key={day} className="text-center text-sm font-semibold text-gray-600 py-2">
-                              {day}
-                            </div>
-                          ))}
+                        <div className="mb-4">
+                          <div className="flex justify-between items-center mb-4">
+                            <motion.button 
+                              onClick={goToPreviousMonth} 
+                              className="p-2 rounded-lg hover:bg-teal-50 dark:hover:bg-teal-900/30 text-gray-600 dark:text-gray-400 hover:text-teal-600 dark:hover:text-teal-400 transition-colors"
+                              whileHover={{ x: -2 }}
+                              whileTap={{ scale: 0.9 }}
+                            >
+                              <ChevronLeft size={20} />
+                            </motion.button>
+                            <span className="font-bold text-gray-900 dark:text-white text-lg">
+                              {currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                            </span>
+                            <motion.button 
+                              onClick={goToNextMonth} 
+                              className="p-2 rounded-lg hover:bg-teal-50 dark:hover:bg-teal-900/30 text-gray-600 dark:text-gray-400 hover:text-teal-600 dark:hover:text-teal-400 transition-colors"
+                              whileHover={{ x: 2 }}
+                              whileTap={{ scale: 0.9 }}
+                            >
+                              <ChevronLeft size={20} className="rotate-180" />
+                            </motion.button>
+                          </div>
                           
-                          {(() => {
-                            const { daysInMonth, startingDayOfWeek } = getDaysInMonth(currentMonth);
-                            const days = [];
+                          <div className="grid grid-cols-7 gap-2">
+                            {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(day => (
+                              <div key={day} className="text-center text-xs font-bold text-gray-600 dark:text-gray-400 py-2">
+                                {day}
+                              </div>
+                            ))}
                             
-                            for (let i = 0; i < startingDayOfWeek; i++) {
-                              days.push(<div key={`empty-${i}`} />);
-                            }
-                            
-                            for (let day = 1; day <= daysInMonth; day++) {
-                              const disabled = isDateDisabled(day);
-                              days.push(
-                                <button
-                                  key={day}
-                                  onClick={() => !disabled && handleDateSelect(day)}
-                                  disabled={disabled}
-                                  className={`p-2 text-sm rounded ${
-                                    disabled
-                                      ? 'text-gray-300 cursor-not-allowed'
-                                      : 'hover:bg-teal-50 hover:text-teal-700'
-                                  }`}
-                                >
-                                  {day}
-                                </button>
-                              );
-                            }
-                            
-                            return days;
-                          })()}
+                            {(() => {
+                              const { daysInMonth, startingDayOfWeek } = getDaysInMonth(currentMonth);
+                              const days = [];
+                              
+                              for (let i = 0; i < startingDayOfWeek; i++) {
+                                days.push(<div key={`empty-${i}`} />);
+                              }
+                              
+                              for (let day = 1; day <= daysInMonth; day++) {
+                                const disabled = isDateDisabled(day);
+                                days.push(
+                                  <motion.button
+                                    key={day}
+                                    onClick={() => !disabled && handleDateSelect(day)}
+                                    disabled={disabled}
+                                    className={`p-2 text-sm rounded-lg font-medium ${
+                                      disabled
+                                        ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
+                                        : 'text-gray-700 dark:text-gray-300 hover:bg-teal-50 dark:hover:bg-teal-900/30 hover:text-teal-600 dark:hover:text-teal-400'
+                                    }`}
+                                    whileHover={disabled ? {} : { scale: 1.1 }}
+                                    whileTap={disabled ? {} : { scale: 0.9 }}
+                                  >
+                                    {day}
+                                  </motion.button>
+                                );
+                              }
+                              
+                              return days;
+                            })()}
+                          </div>
                         </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
+                      </motion.div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
 
                 {isLoadingSchedule || isLoadingDates ? (
                   <div className="flex justify-center py-8">
-                    <Loader2 className="w-6 h-6 animate-spin text-teal-600" />
+                    <div className="relative">
+                      <Loader2 className="w-8 h-8 animate-spin text-teal-600" />
+                      <div className="absolute inset-0 bg-teal-400/20 rounded-full blur-xl"></div>
+                    </div>
                   </div>
                 ) : !weeklySchedule || !weeklySchedule.hasSchedule ? (
-                  <div className="text-center py-8 text-gray-500">
+                  <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                    <Calendar className="w-12 h-12 mx-auto mb-2 text-gray-300 dark:text-gray-600" />
                     <p className="text-sm">No weekly schedule available</p>
                   </div>
                 ) : availableDates.length === 0 && showDefaultDates ? (
-                  <div className="text-center py-8 text-gray-500">
+                  <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                    <Clock className="w-12 h-12 mx-auto mb-2 text-gray-300 dark:text-gray-600" />
                     <p className="text-sm">No available slots for the selected consultation mode</p>
                   </div>
                 ) : (
@@ -691,25 +908,27 @@ if (error || !therapist) {
                       <>
                         {/* Show next available dates with slots */}
                         {availableDates.map((availDate, index) => (
-                          <div key={index} className={index > 0 ? 'mt-4' : ''}>
-                            <p className="text-sm text-gray-600 font-medium mb-2">
+                          <div key={index} className={index > 0 ? 'mt-6' : ''}>
+                            <p className="text-sm text-gray-700 dark:text-gray-300 font-semibold mb-3">
                               {availDate.displayLabel}
                             </p>
                             <div className="grid grid-cols-2 gap-2">
                               {availDate.slots.map((slot, idx) => {
                                 const slotKey = `${availDate.date}-${slot.startTime}`;
                                 return (
-                                  <button
+                                  <motion.button
                                     key={`${availDate.date}-${idx}`}
                                     onClick={() => setSelectedSlot(slotKey)}
-                                    className={`px-4 py-2 rounded-lg border font-medium text-sm transition-all ${
+                                    className={`px-4 py-2.5 rounded-xl border-2 font-semibold text-sm transition-all ${
                                       selectedSlot === slotKey
-                                        ? 'border-teal-500 bg-teal-50 text-teal-700'
-                                        : 'border-gray-200 text-gray-700 hover:border-gray-300'
+                                        ? 'border-teal-500 bg-gradient-to-r from-teal-50 to-cyan-50 dark:from-teal-900/40 dark:to-cyan-900/40 text-teal-700 dark:text-teal-300 shadow-md'
+                                        : 'border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:border-teal-300 dark:hover:border-teal-700 bg-white dark:bg-gray-700/50'
                                     }`}
+                                    whileHover={{ scale: 1.05 }}
+                                    whileTap={{ scale: 0.95 }}
                                   >
                                     {formatTime(slot.startTime)}
-                                  </button>
+                                  </motion.button>
                                 );
                               })}
                             </div>
@@ -719,27 +938,29 @@ if (error || !therapist) {
                     ) : (
                       /* Custom Date Slots */
                       <div>
-                        <p className="text-sm text-gray-600 font-medium mb-2">
+                        <p className="text-sm text-gray-700 dark:text-gray-300 font-semibold mb-3">
                           {formatDateDisplay(selectedDate)} ({getDayOfWeek(selectedDate)})
                         </p>
                         {customDateSlots.length === 0 ? (
-                          <p className="text-xs text-gray-500 text-center py-2">No available slots for this day</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 text-center py-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">No available slots for this day</p>
                         ) : (
                           <div className="grid grid-cols-2 gap-2">
                             {customDateSlots.map((slot, idx) => {
                               const slotKey = `${selectedDate}-${slot.startTime}`;
                               return (
-                                <button
+                                <motion.button
                                   key={`custom-${idx}`}
                                   onClick={() => setSelectedSlot(slotKey)}
-                                  className={`px-4 py-2 rounded-lg border font-medium text-sm transition-all ${
+                                  className={`px-4 py-2.5 rounded-xl border-2 font-semibold text-sm transition-all ${
                                     selectedSlot === slotKey
-                                      ? 'border-teal-500 bg-teal-50 text-teal-700'
-                                      : 'border-gray-200 text-gray-700 hover:border-gray-300'
+                                      ? 'border-teal-500 bg-gradient-to-r from-teal-50 to-cyan-50 dark:from-teal-900/40 dark:to-cyan-900/40 text-teal-700 dark:text-teal-300 shadow-md'
+                                      : 'border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:border-teal-300 dark:hover:border-teal-700 bg-white dark:bg-gray-700/50'
                                   }`}
+                                  whileHover={{ scale: 1.05 }}
+                                  whileTap={{ scale: 0.95 }}
                                 >
                                   {formatTime(slot.startTime)}
-                                </button>
+                                </motion.button>
                               );
                             })}
                           </div>
@@ -750,34 +971,47 @@ if (error || !therapist) {
                 )}
               </div>
 
-              {/* Pricing */}
-              <div className="mb-6">
-                <div className="flex items-baseline justify-between">
-                  <span className="text-sm font-medium text-gray-700">Session Fee:</span>
-                  <span className="text-2xl font-bold text-teal-600">
-                    ₹{getSessionPrice()}/session
-                  </span>
+              {/* Enhanced Pricing */}
+              <div className="mb-6 p-4 bg-gradient-to-r from-teal-50 to-cyan-50 dark:from-teal-900/30 dark:to-cyan-900/30 rounded-2xl border border-teal-200 dark:border-teal-800">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">Session Fee:</span>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-teal-600 bg-clip-text text-transparent">
+                      ₹{getSessionPrice()}
+                    </span>
+                    <span className="text-sm text-gray-600 dark:text-gray-400">/session</span>
+                  </div>
                 </div>
               </div>
 
-              {/* Action Buttons */}
-              <div className="space-y-3">
-                <button 
-                  disabled={!selectedSlot || isLoadingSchedule || isLoadingDates}
-                  className={`w-full font-medium py-3 rounded-lg transition-colors ${
-                    selectedSlot && !isLoadingSchedule && !isLoadingDates
-                      ? 'bg-teal-500 hover:bg-teal-600 text-white'
-                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                  }`}
-                  onClick={makePayment}
-                >
-                  Proceed
-                </button>
-              </div>
-            </div>
+              {/* Enhanced Action Button */}
+              <motion.button 
+                disabled={!selectedSlot || isLoadingSchedule || isLoadingDates}
+                className={`w-full font-bold py-4 rounded-xl transition-all text-base ${
+                  selectedSlot && !isLoadingSchedule && !isLoadingDates
+                    ? 'bg-gradient-to-r from-blue-600 to-teal-600 hover:from-blue-700 hover:to-teal-700 text-white shadow-lg hover:shadow-xl'
+                    : 'bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                }`}
+                onClick={makePayment}
+                whileHover={selectedSlot && !isLoadingSchedule && !isLoadingDates ? { scale: 1.02 } : {}}
+                whileTap={selectedSlot && !isLoadingSchedule && !isLoadingDates ? { scale: 0.98 } : {}}
+              >
+                Proceed to Payment
+              </motion.button>
+            </motion.div>
           </div>
         </div>
       </div>
+
+      {/* Payment Method Modal */}
+      <PaymentMethodModal
+        isOpen={showPaymentModal}
+        onClose={() => setShowPaymentModal(false)}
+        amount={sessionPrice}
+        onWalletPayment={handleWalletPayment}
+        onStripePayment={handleStripePayment}
+      />
     </div>
+    </>
   );
 }
