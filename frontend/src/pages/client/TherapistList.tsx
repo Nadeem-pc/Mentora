@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { clientTherapistService } from '@/services/client/clientTherapistService';
 import { axiosInstance } from '@/config/axios.config';
 import { useNavigate } from 'react-router-dom';
-import FloatingChatButtonRedesigned from '@/components/client/ChatbotRedesigned';
+import FloatingChatButtonRedesigned from '@/components/client/Chatbot';
 import Header from '@/components/client/Header';
 
 interface Therapist {
