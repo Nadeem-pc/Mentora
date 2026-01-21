@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { LogOut } from 'lucide-react';
 import ConfirmationModal from './Modal';
+import NotificationDropdown from './NotificationDropdown';
 
 interface HeaderProps {
   onMenuClick: () => void;
@@ -53,8 +54,9 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
           </button>
         </div>
 
-        <div className="flex items-center space-x-4">
-          <button
+        <div className="flex items-center space-x-2">
+          <NotificationDropdown />
+          <button 
             onClick={handleLogoutClick}
             className="flex items-center space-x-2 px-4 py-2 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all duration-300 border border-red-200 dark:border-red-800"
             title="Logout"
