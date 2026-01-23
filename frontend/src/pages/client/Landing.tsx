@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import About from "@/components/client/About"
 import Features from "@/components/client/Features"
 import Footer from "@/components/client/Footer"
@@ -7,6 +8,24 @@ import HeroSection from "@/components/client/HeroSection"
 import Testimonials from "@/components/client/Testimonials"
 
 const Landing = () => {
+
+  const { hash } = useLocation();
+
+  // Scroll on route load (from other pages)
+  useEffect(() => {
+    if (!hash) return;
+
+    const element = document.querySelector(hash);
+    if (element) {
+      setTimeout(() => {
+        element.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+      }, 100);
+    }
+  }, [hash]);
+
   // Smooth scroll behavior
   useEffect(() => {
     const handleAnchorClick = (e: MouseEvent) => {
