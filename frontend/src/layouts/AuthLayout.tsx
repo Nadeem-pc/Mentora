@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import background_img from '/signup-background.jpg';
+import background_img from '@/assets/signup-background.jpg';
 import { Outlet, useLocation } from 'react-router-dom';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { env } from '@/config/env.config';
