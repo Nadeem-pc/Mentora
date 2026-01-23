@@ -8,7 +8,6 @@ import HeroSection from "@/components/client/HeroSection"
 import Testimonials from "@/components/client/Testimonials"
 
 const Landing = () => {
-
   const { hash } = useLocation();
 
   // Scroll on route load (from other pages)
