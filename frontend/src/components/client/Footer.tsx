@@ -1,4 +1,5 @@
 import React from 'react';
+import logo from '/mentora-icon.png';
 
 const Footer: React.FC = () => {
   return (
@@ -13,13 +14,22 @@ const Footer: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
           {/* Company Info */}
           <div className="col-span-1 md:col-span-2">
-            <div className="flex items-center mb-4 group">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 via-cyan-500 to-teal-500 rounded-xl mr-3 shadow-lg group-hover:shadow-xl transition-all duration-300 transform group-hover:scale-110"></div>
-              <span className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-teal-400 bg-clip-text text-transparent">
-                Mentora
-              </span>
+            <div className="flex items-center mb-4 gap-3">
+              <img
+                src={logo}
+                alt="Mentora logo"
+                className="h-14 w-auto md:h-16 object-contain"
+              />
+              <div className="text-left">
+                <h3 className="text-4xl font-semibold text-white tracking-wide">
+                  Mentora
+                </h3>
+                <p className="text-[12px] text-teal-300">
+                  Your mental health partner
+                </p>
+              </div>
             </div>
-            <p className="text-gray-400 text-left max-w-md mb-4 leading-relaxed">
+            <p className="text-gray-400 text-left max-w-md mb-4 mt-5 leading-relaxed">
               Providing accessible, professional mental health support to help you thrive. 
               Your journey to better mental health starts here.
             </p>
