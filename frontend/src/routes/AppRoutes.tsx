@@ -33,15 +33,9 @@ import TherapistChatDashboard from "@/pages/therapist/ChatDashboard";
 import AppointmentDetailPage from "@/pages/therapist/AppointmentDetail";
 import TherapistReviewsDashboard from "@/pages/therapist/Review";
 import SubscriptionAdminPage from "@/pages/admin/Subscription";
+import MarketingLayout from "@/layouts/MarketingLayout";
 
 export const router = createBrowserRouter([
-    {
-        path: '/', element: <Landing/> 
-    },
-    {
-        path: '/about', element: <AboutPage/> 
-    },
-    
     {
         path: '/auth', element: <AuthLayout/>, 
         children: [
@@ -64,6 +58,24 @@ export const router = createBrowserRouter([
     },
 
     {
+        path: '/', element: <MarketingLayout />,
+        children: [
+            { 
+                index: true, element: <Landing /> 
+            },
+            { 
+                path: 'about', element: <AboutPage /> 
+            },
+            { 
+                path: 'therapists', element: <TherapistListing />
+            },
+            {
+                path: 'therapists/:therapistId', element: <TherapistDetailPage /> 
+            },
+        ]
+    },
+
+    {
         path: '/client/home', element: <ProtectedRoute allowedRoles={['client']}> <MentalHealthPlatform/> </ProtectedRoute>
     },
     {
@@ -73,18 +85,11 @@ export const router = createBrowserRouter([
         path: '/client/chat/:therapistId', element: <ProtectedRoute allowedRoles={['client']}> <ClientChatPage /> </ProtectedRoute>
     },
     {
-        path: '/therapists', element: <ProtectedRoute allowedRoles={['client']}> <TherapistListing/> </ProtectedRoute>
-    },
-    {
-        path: '/therapist/detail/:therapistId', element: <ProtectedRoute allowedRoles={['client']}> <TherapistDetailPage/> </ProtectedRoute>
-    },
-    {
         path: '/payment/success', element: <PaymentSuccess/>
     },
     {
         path: '/payment/cancel', element: <PaymentCancel/>
     },
-
 
     {
         path: '/admin',  element: <ProtectedRoute allowedRoles={['admin']}> <DashboardLayout /> </ProtectedRoute>,
