@@ -3,6 +3,7 @@ import PreAuth from "@/pages/auth/PreAuth";
 import AuthLayout from "@/layouts/AuthLayout";
 import Auth from "@/pages/auth";
 import Landing from "@/pages/client/Landing";
+import AboutPage from "@/pages/client/About";
 import UnProtectedRoute from "./UnProtectedRoute";
 import OtpForm from "@/components/auth/OtpForm";
 import ClientManagement from "@/pages/admin/ClientManagement";
@@ -37,6 +38,10 @@ export const router = createBrowserRouter([
     {
         path: '/', element: <Landing/> 
     },
+    {
+        path: '/about', element: <AboutPage/> 
+    },
+    
     {
         path: '/auth', element: <AuthLayout/>, 
         children: [
