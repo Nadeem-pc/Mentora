@@ -1,9 +1,9 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useInView } from 'framer-motion';
-import sarahImg from "@/assets/sarah.avif";
-import jamesImg from "@/assets/james.avif";
-import emilyImg from "@/assets/emily.avif";
+import sarahImg from "@/assets/testimonials/sarah.webp";
+import jamesImg from "@/assets/testimonials/james.webp";
+import emilyImg from "@/assets/testimonials/emily.webp";
 
 interface Testimonial {
   name: string;
