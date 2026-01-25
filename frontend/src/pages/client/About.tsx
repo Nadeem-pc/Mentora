@@ -1,15 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import Header from '@/components/client/Header';
-import Footer from '@/components/client/Footer';
-import { 
-  Heart, 
-  ShieldCheck, 
-  Lightbulb, 
-  Users, 
-  Target,
-  Sparkles,
-} from 'lucide-react';
+import { Heart, ShieldCheck, Lightbulb, Users, Target, Sparkles } from 'lucide-react';
 
 const AboutPage: React.FC = () => {
 
@@ -74,8 +65,6 @@ const AboutPage: React.FC = () => {
 
   return (
     <div className="min-h-screen w-screen bg-white dark:bg-gray-900 overflow-x-hidden">
-      <Header />
-      
       {/* Enhanced Hero Section */}
       <section className="relative pt-32 pb-20 min-h-[70vh] flex items-center overflow-hidden">
         {/* Sophisticated Background */}
@@ -482,8 +471,6 @@ const AboutPage: React.FC = () => {
           </motion.div>
         </div>
       </section>
-
-      <Footer />
     </div>
   );
 };
