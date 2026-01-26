@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { TrendingUp, CreditCard, Wallet, ArrowUpRight, ArrowDownRight, IndianRupee, Loader2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { TrendingUp, Wallet, ArrowUpRight, ArrowDownRight, IndianRupee, Loader2 } from 'lucide-react';
 import { walletService } from '@/services/shared/walletService';
 
 interface Transaction {
@@ -9,7 +9,7 @@ interface Transaction {
   description: string;
   date: string;
   status: string;
-  metadata?: any;
+  metadata?: unknown;
 }
 
 interface Statistics {
@@ -27,22 +27,48 @@ const TherapistEarnings = () => {
     platformFee: 0,
     balance: 0
   });
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    limit: 10,
+    totalItems: 0
+  });
+  const [typeFilter, setTypeFilter] = useState<'credit' | 'debit' | ''>('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchWalletData();
-  }, []);
-
-  const fetchWalletData = async () => {
+  const fetchWalletData = async (overrides?: {
+    page?: number;
+    type?: 'credit' | 'debit' | '' | undefined;
+    startDate?: string | undefined;
+    endDate?: string | undefined;
+  }) => {
     try {
       setLoading(true);
       setError(null);
-      const data = await walletService.getUserWallet();
-      
+      const targetPage = overrides?.page ?? pagination.currentPage;
+      const resolvedType = overrides?.type ?? typeFilter;
+      const resolvedStartDate = overrides?.startDate ?? startDate;
+      const resolvedEndDate = overrides?.endDate ?? endDate;
+      const data = await walletService.getUserWallet({
+        page: targetPage,
+        limit: pagination.limit,
+        type: resolvedType || undefined,
+        startDate: resolvedStartDate || undefined,
+        endDate: resolvedEndDate || undefined
+      });
+
       setStatistics(data.statistics);
       setTransactions(data.transactions);
-    } catch (err: any) {
+      setPagination(prev => ({
+        ...prev,
+        currentPage: data.pagination.currentPage,
+        totalPages: data.pagination.totalPages,
+        totalItems: data.pagination.totalItems
+      }));
+    } catch (err: unknown) {
       setError(err.response?.data?.message || 'Failed to fetch wallet data');
       console.error('Error fetching wallet:', err);
     } finally {
@@ -50,7 +76,29 @@ const TherapistEarnings = () => {
     }
   };
 
-  const StatCard = ({ icon: Icon, title, amount, bgColor, textColor }: any) => (
+  useEffect(() => {
+    fetchWalletData({ page: 1 });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleApplyFilters = () => {
+    fetchWalletData({ page: 1 });
+  };
+
+  const handleClearFilters = () => {
+    setTypeFilter('');
+    setStartDate('');
+    setEndDate('');
+    fetchWalletData({ page: 1, type: '', startDate: '', endDate: '' });
+  };
+
+  const handlePageChange = (direction: 'prev' | 'next') => {
+    const targetPage = direction === 'next' ? pagination.currentPage + 1 : pagination.currentPage - 1;
+    if (targetPage < 1 || targetPage > pagination.totalPages) return;
+    fetchWalletData({ page: targetPage });
+  };
+
+  const StatCard = ({ icon: Icon, title, amount, bgColor, textColor }: unknown) => (
     <div className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
       <div className="flex items-center justify-between">
         <div>
@@ -87,7 +135,7 @@ const TherapistEarnings = () => {
           <h2 className="text-xl font-bold text-gray-900 mb-2">Error Loading Wallet</h2>
           <p className="text-gray-600 mb-4">{error}</p>
           <button
-            onClick={fetchWalletData}
+            onClick={() => fetchWalletData()}
             className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
           >
             Try Again
@@ -120,13 +168,6 @@ const TherapistEarnings = () => {
             bgColor="bg-green-100"
             textColor="text-green-600"
           />
-          {/* <StatCard
-            icon={CreditCard}
-            title="Platform Fee"
-            amount={statistics.platformFee}
-            bgColor="bg-orange-100"
-            textColor="text-orange-600"
-          /> */}
           <StatCard
             icon={Wallet}
             title="Balance"
@@ -137,9 +178,46 @@ const TherapistEarnings = () => {
         </div>
 
         <div className="bg-white rounded-lg shadow-md">
-          <div className="p-6 border-b border-gray-200">
-            <h2 className="text-xl font-bold text-gray-900">Transaction History</h2>
-            <p className="text-gray-600 text-sm mt-1">Your recent credits and debits</p>
+          <div className="p-6 border-b border-gray-200 space-y-4">
+            <div>
+              <h2 className="text-xl font-bold text-gray-900">Transaction History</h2>
+              <p className="text-gray-600 text-sm mt-1">Your recent credits and debits</p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+              <select
+                value={typeFilter}
+                onChange={(e) => setTypeFilter(e.target.value as 'credit' | 'debit' | '')}
+                className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+              >
+                <option value="">All Types</option>
+                <option value="credit">Credit</option>
+                <option value="debit">Debit</option>
+              </select>
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+              />
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+              />
+              <button
+                onClick={handleApplyFilters}
+                className="bg-blue-600 text-white rounded-lg px-3 py-2 text-sm hover:bg-blue-700 transition-colors"
+              >
+                Apply Filters
+              </button>
+              <button
+                onClick={handleClearFilters}
+                className="bg-gray-200 text-gray-700 rounded-lg px-3 py-2 text-sm hover:bg-gray-300 transition-colors"
+              >
+                Clear Filters
+              </button>
+            </div>
           </div>
 
           {transactions.length === 0 ? (
@@ -254,6 +332,31 @@ const TherapistEarnings = () => {
                     </div>
                   </div>
                 ))}
+              </div>
+
+              <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between text-sm text-gray-600">
+                <span>
+                  Showing {((pagination.currentPage - 1) * pagination.limit) + 1} to {Math.min(pagination.currentPage * pagination.limit, pagination.totalItems)} of {pagination.totalItems} transactions
+                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    disabled={pagination.currentPage <= 1}
+                    onClick={() => handlePageChange('prev')}
+                    className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    Previous
+                  </button>
+                  <span className="px-3 py-2 text-sm font-medium">
+                    Page {pagination.currentPage} of {pagination.totalPages}
+                  </span>
+                  <button
+                    disabled={pagination.currentPage >= pagination.totalPages}
+                    onClick={() => handlePageChange('next')}
+                    className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    Next
+                  </button>
+                </div>
               </div>
             </>
           )}
