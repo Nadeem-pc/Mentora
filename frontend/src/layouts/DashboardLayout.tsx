@@ -1,7 +1,7 @@
 import Header from '@/components/shared/Header';
 import Sidebar from '@/components/shared/Sidebar';
 import { adminSidebarConfig } from '@/components/admin/SidebarConfig';
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { useTherapistSidebarConfig } from '@/components/therapist/SidebarConfig';
 
@@ -9,7 +9,6 @@ const DashboardLayout: React.FC = () => {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [darkMode, setDarkMode] = useState(false);
 
   const getRoleFromPath = (path: string) => {
     if (path.startsWith('/admin')) return 'admin';
@@ -24,29 +23,6 @@ const DashboardLayout: React.FC = () => {
   } else if (role === "therapist") {
     currentConfig = useTherapistSidebarConfig(); 
   }
-
-  useEffect(() => {
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme === 'dark') {
-      setDarkMode(true);
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, []);
-
-  const toggleTheme = () => {
-    const newDarkMode = !darkMode;
-    setDarkMode(newDarkMode);
-    
-    if (newDarkMode) {
-      document.documentElement.classList.add('dark');
-      localStorage.setItem('theme', 'dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-      localStorage.setItem('theme', 'light');
-    }
-  };
 
   const sidebarMargin = sidebarCollapsed ? 'lg:ml-16' : 'lg:ml-64';
 
@@ -64,8 +40,6 @@ const DashboardLayout: React.FC = () => {
       <div className={`flex-1 flex flex-col overflow-hidden transition-all duration-300 ${sidebarMargin}`}>
         <Header 
           onMenuClick={() => setSidebarOpen(true)} 
-          darkMode={darkMode}
-          onToggleTheme={toggleTheme}
           userRole={role} 
         />
         

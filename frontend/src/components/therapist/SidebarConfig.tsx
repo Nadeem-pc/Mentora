@@ -1,5 +1,5 @@
 import { useAuth } from "@/contexts/auth.context";
-import { BarChart3, Calendar, Clock, User, Wallet } from "lucide-react";
+import { BarChart3, Calendar, Clock, MessageCircle, Star, User, Wallet } from "lucide-react";
 
 export const useTherapistSidebarConfig = () => {
   const { user } = useAuth();
@@ -26,6 +26,16 @@ export const useTherapistSidebarConfig = () => {
         name: 'Appoinments',
         to: '/therapist/appointments',
         icon: <Calendar className="w-5 h-5"/> 
+      },
+      {
+        name: 'Review & Rating',
+        to: '/therapist/reviews',
+        icon: <Star className="w-5 h-5"/> 
+      },
+      {
+        name: 'Messages',
+        to: '/therapist/chat',
+        icon: <MessageCircle className="w-5 h-5"/> 
       },
       {
         name: "Wallet",

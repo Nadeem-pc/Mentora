@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { chatService, Conversation } from "@/services/chat/chat.service";
+import { chatService, Conversation } from "@/services/shared/chatService";
 import { MessageCircle, Loader2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 

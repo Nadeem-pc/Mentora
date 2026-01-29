@@ -84,7 +84,6 @@
   --sidebar-ring: oklch(0.7 0.2 260);
 }
 
-
 @media (prefers-color-scheme: light) {
   :root {
     color: #213547;
@@ -168,25 +167,113 @@
   --sidebar-ring: oklch(0.556 0 0);
 }
 
+/* Hide scrollbars globally while keeping scrolling functional */
+html, body {
+  overflow-x: hidden;
+}
+
+* {
+  -ms-overflow-style: none; 
+  scrollbar-width: none;   
+}
+
+*::-webkit-scrollbar {
+  display: none;        
+}
+
 body {
   @apply bg-background text-foreground;
   /* font-family: 'Inter', sans-serif; */
   font-family: 'Poppins', sans-serif;
 }
+
 .btn-primary {
   @apply bg-teal-500 text-primary-foreground rounded-lg px-6 py-2 hover:bg-[oklch(0.68_0.15_195)];
 }
 
- @keyframes fadeIn {
-          from {
-            opacity: 0;
-            transform: translateY(10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        .animate-fadeIn {
-          animation: fadeIn 0.3s ease-out;
-        }
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes gradient {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.animate-gradient {
+  animation: gradient 3s ease infinite;
+  background-size: 200% auto;
+}
+
+@keyframes bounce-slow {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.animate-bounce-slow {
+  animation: bounce-slow 3s ease-in-out infinite;
+}
+
+.delay-500 {
+  animation-delay: 500ms;
+}
+
+.delay-1000 {
+  animation-delay: 1000ms;
+}
+
+@keyframes shine {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(200%);
+  }
+}
+
+/* Hide scrollbar but keep functionality */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari and Opera */  
+}
+
+/* Custom scrollbar for filter specialization */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgb(45 212 191);
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgb(20 184 166);
+}

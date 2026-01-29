@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import NotificationDropdown from '@/components/shared/NotificationDropdown';
+import logo from "@/assets/mentora-logo.jpeg"
 
 const Header: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -8,7 +9,7 @@ const Header: React.FC = () => {
 
   const navigate = useNavigate();
 
-  // Add scroll effect for enhanced appeal
+  // Scroll effect for enhanced appeal
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 20);
@@ -26,29 +27,22 @@ const Header: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           
-          {/* Enhanced Logo */}
-          <div className="flex items-center group cursor-pointer" onClick={() => navigate('/')}>
-            <div className="relative">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 via-cyan-500 to-teal-500 rounded-xl shadow-lg group-hover:shadow-xl transition-all duration-300 flex items-center justify-center">
-                <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 2C13.1 2 14 2.9 14 4C14 5.1 13.1 6 12 6C10.9 6 10 5.1 10 4C10 2.9 10.9 2 12 2ZM21 9V7L15 7V9C15 10.1 14.1 11 13 11V22H11V16H9V22H7V11C5.9 11 5 10.1 5 9V7H3V9C3 11.2 4.8 13 7 13V20C7 21.1 7.9 22 9 22H15C16.1 22 17 21.1 17 20V13C19.2 13 21 11.2 21 9Z"/>
-                </svg>
-              </div>
-              {/* Animated glow effect */}
-              <div className="absolute inset-0 w-10 h-10 bg-gradient-to-br from-blue-400 to-teal-400 rounded-xl opacity-0 group-hover:opacity-20 transition-opacity duration-300 animate-pulse"></div>
-            </div>
-            <span className="ml-3 text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent group-hover:from-blue-600 group-hover:to-teal-600 transition-all duration-300">
-              Mentora
-            </span>
+          {/* Logo */}
+          <div className="flex items-center cursor-pointer" onClick={() => navigate('/')}>
+            <img
+              src={logo}
+              alt="Mentora logo"
+              className="h-11 w-auto md:h-13 object-contain"
+            />
           </div>
 
           {/* Enhanced Desktop Navigation */}
           <nav className="hidden md:flex text-sm items-center space-x-1">
             {[
               { name: 'About us', href: '/about', isRoute: true },
-              { name: 'Services', href: '#services', isRoute: false },
-              { name: 'Experts', href: '/therapists', isRoute: true },
-              { name: 'Contact us', href: '#contact', isRoute: false }
+              { name: 'What We Offer', href: '/#services', isRoute: false },
+              { name: 'Our Experts', href: '/therapists', isRoute: true },
+              { name: 'Contact us', href: '/#contact', isRoute: false }
             ].map((item) => (
               item.isRoute ? (
                 <button
@@ -72,7 +66,6 @@ const Header: React.FC = () => {
             ))}
           </nav>
 
-          {/* Enhanced CTA Section */}
           <div className="hidden md:flex items-center space-x-3">
             {/* Notification Dropdown */}
             <NotificationDropdown />
@@ -167,7 +160,7 @@ const Header: React.FC = () => {
               {[
                 { name: 'Home', href: '#home', isRoute: false },
                 { name: 'About us', href: '/about', isRoute: true },
-                { name: 'Services', href: '#services', isRoute: false },
+                { name: 'Services', href: '/#services', isRoute: false },
                 { name: 'Our Therapists', href: '/therapists', isRoute: true },
                 { name: 'Contact', href: '#contact', isRoute: false }
               ].map((item) => (

@@ -23,15 +23,32 @@ interface WalletResponse {
             description: string;
             status: string;
             date: string;
-            metadata?: any;
+            metadata?: unknown;
         }>;
+        pagination: {
+            currentPage: number;
+            limit: number;
+            totalItems: number;
+            totalPages: number;
+        };
     };
 }
 
+export interface WalletQueryOptions {
+    page?: number;
+    limit?: number;
+    type?: 'credit' | 'debit';
+    status?: string;
+    startDate?: string;
+    endDate?: string;
+}
+
 export const walletService = {
-    getUserWallet: async (): Promise<WalletResponse['data']> => {
+    getUserWallet: async (options?: WalletQueryOptions): Promise<WalletResponse['data']> => {
         try {
-            const response = await axiosInstance.get<WalletResponse>('/wallet/getWallet');
+            const response = await axiosInstance.get<WalletResponse>('/wallet/getWallet', {
+                params: options
+            });
             return response.data.data;
         } catch (error) {
             console.error('Error fetching wallet:', error);

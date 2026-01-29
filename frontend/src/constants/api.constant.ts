@@ -7,10 +7,15 @@ export const API = {
         GET_THERAPIST_SLOTS: (therapistId: string) => `/client/therapist/${therapistId}/slots`,
         GET_AVAILABLE_SLOTS_FOR_DATE: (therapistId: string, date: string) => 
             `/client/therapist/${therapistId}/slots/available?date=${date}`,
+        GET_THERAPIST_REVIEWS: (therapistId: string) => `/client/therapist/${therapistId}/reviews`,
         CREATE_CHECKOUT_SESSION: '/api/v1/payment/create-checkout-session',
         GET_PAYMENT_RECEIPT: (sessionId: string) => `/api/v1/payment/receipt/${sessionId}`,
         CANCEL_APPOINTMENT: (appointmentId: string) => `/client/appointment/${appointmentId}`,
+        GET_APPOINTMENT_DETAIL: (appointmentId: string) => `/client/appointments/${appointmentId}`,
+        SUBMIT_APPOINTMENT_FEEDBACK: (appointmentId: string) => `/client/appointments/${appointmentId}/feedback`,
         GET_THERAPIST_SUGGESTIONS: "/api/ai/therapist-suggestions",
+        SUBMIT_INTAKE_FORM: "/client/intake-form",
+        AUTO_BOOK_APPOINTMENT: "/client/auto-book-appointment",
     },
     THERAPIST: {
         GET_THERAPIST_PROFILE: "/therapist/profile",
@@ -21,7 +26,11 @@ export const API = {
         GET_WEEKLY_SCHEDULE: "/therapist/slot",
         UPDATE_WEEKLY_SCHEDULE: "/therapist/slot",
         GET_APPOINTMENTS: '/therapist/appointments',
+        GET_APPOINTMENT_DETAIL: (appointmentId: string) => `/therapist/appointments/${appointmentId}`,
+        SAVE_APPOINTMENT_NOTES: (appointmentId: string) => `/therapist/appointments/${appointmentId}/notes`,
+        UPDATE_APPOINTMENT_STATUS: (appointmentId: string) => `/therapist/appointments/${appointmentId}/status`,
         GET_APPROVALSTATUS: '/therapist/approvalStatus',
+        GET_REVIEWS: '/therapist/reviews',
     },
     ADMIN: {
         GET_USERS: "/admin/users",
@@ -31,5 +40,6 @@ export const API = {
         GET_JOB_APPLICATIONS: "/admin/job-applications",
         UPDATE_APPLICATION_STATUS: "/admin/job-applications",
         GET_JOB_APPLICATION_DETAILS: (applicationId: string) => `/admin/job-applications/${applicationId}`,
+        GET_DASHBOARD: "/admin/dashboard",
     }
 };

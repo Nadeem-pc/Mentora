@@ -201,7 +201,7 @@ const TherapistProfilePage: React.FC = () => {
     setUploadProgress('Preparing update...');
 
     try {
-      const updatePayload: any = { ...formData };
+      const updatePayload: unknown = { ...formData };
 
       if (profileImgFile) {
         setUploadProgress('Uploading profile image...');

@@ -152,7 +152,7 @@ const UserDetailPage = () => {
     }
   };
 
-  const openSheet = (session: any) => {
+  const openSheet = (session: unknown) => {
     setSelectedSession(session);
     setIsSheetOpen(true);
   };
@@ -335,7 +335,7 @@ const UserDetailPage = () => {
             ) : (
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Upcoming Sessions</h3>
-                {upcomingSessions.map((session: any) => (
+                {upcomingSessions.map((session: unknown) => (
                   <div key={session.id} className="flex items-center justify-between p-4 border rounded-lg">
                     <div className="flex items-center gap-3">
                       <SmallProfilePicture 
@@ -384,7 +384,7 @@ const UserDetailPage = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {sessionHistory.map((session: any) => (
+                  {sessionHistory.map((session: unknown) => (
                     <tr key={session.id} className="border-b border-gray-100">
                       <td className="py-4 px-2">
                         <div className="flex items-center gap-2">

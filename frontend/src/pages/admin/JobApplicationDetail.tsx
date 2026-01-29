@@ -92,7 +92,7 @@ const ApplicationDetailPage: React.FC = () => {
           }
           setCertificationUrls(certUrls);
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error('Error fetching application details:', err);
         setError(err.response?.data?.message || err.message || 'Failed to load application details');
       } finally {
@@ -175,7 +175,7 @@ const ApplicationDetailPage: React.FC = () => {
       setShowApproveModal(false);
       toast.success('Application approved successfully!');
       navigate('/admin/job-applications');
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error approving application:', error);
       
       // Handle conflict error (already processed)
@@ -231,7 +231,7 @@ const ApplicationDetailPage: React.FC = () => {
       setRejectReasonError('');
       toast.success('Application rejected successfully!');
       navigate('/admin/job-applications');
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error rejecting application:', error);
       
       // Handle conflict error (already processed)

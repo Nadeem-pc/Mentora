@@ -1,12 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MessageCircle, AlertCircle } from 'lucide-react';
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-} from '@/components/ui/sheet';
+import { MessageCircle, AlertCircle, X, Sparkles } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { therapistSuggestionService } from '@/services/client/therapistSuggestionService';
 import { useNavigate } from 'react-router-dom';
 import IntakeForm from './IntakeForm';
@@ -257,227 +251,287 @@ const FloatingChatButtonRedesigned: React.FC = () => {
 
   return (
     <>
-      <button
-        onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 w-14 h-14 bg-gradient-to-br from-blue-600 via-cyan-600 to-teal-600 hover:from-blue-700 hover:via-cyan-700 hover:to-teal-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center z-50 group"
-        aria-label="Open Therapist Finder"
-      >
-        <MessageCircle className="w-6 h-6 group-hover:scale-110 transition-transform" />
-      </button>
+      {/* Floating Button */}
+      {!isOpen && (
+        <motion.button
+          onClick={() => setIsOpen(true)}
+          className="fixed bottom-6 right-6 w-14 h-14 bg-gradient-to-br from-blue-600 via-cyan-600 to-teal-600 hover:from-blue-700 hover:via-cyan-700 hover:to-teal-700 text-white rounded-full shadow-2xl hover:shadow-3xl transition-all duration-300 flex items-center justify-center z-50 group"
+          aria-label="Open Therapist Finder"
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+        >
+          <MessageCircle className="w-6 h-6 group-hover:scale-110 transition-transform" />
+        </motion.button>
+      )}
 
-      <Sheet open={isOpen} onOpenChange={setIsOpen}>
-        <SheetContent side="right" className="w-full sm:max-w-2xl p-0 flex flex-col max-h-screen overflow-hidden">
-          <SheetHeader className="px-6 py-4 border-b bg-gradient-to-r from-emerald-600 to-emerald-700 text-white">
-            <div className="flex items-center gap-2">
-              <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
-                <MessageCircle className="w-5 h-5 text-white" />
+      {/* Chat Window */}
+      <AnimatePresence>
+        {isOpen && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsOpen(false)}
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] lg:z-[60]"
+            />
+
+            {/* Chat Container */}
+            <motion.div
+              initial={{ opacity: 0, y: 20, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 20, scale: 0.95 }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              className="fixed inset-0 lg:inset-auto lg:bottom-0 lg:right-6 lg:top-6 lg:w-[600px] lg:h-[calc(100vh-1.5rem)] bg-white dark:bg-gray-800 rounded-none lg:rounded-t-3xl shadow-2xl z-[70] flex flex-col overflow-hidden"
+            >
+              {/* Header */}
+              <div className="relative bg-gradient-to-r from-blue-600 via-cyan-600 to-teal-600 text-white p-3 lg:p-5 flex items-center justify-between shadow-lg">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                    <Sparkles className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold">Therapist Finder</h3>
+                    <p className="text-xs text-blue-100">Find your perfect match in 3 steps</p>
+                  </div>
+                </div>
+                <motion.button
+                  onClick={() => setIsOpen(false)}
+                  className="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 backdrop-blur-sm flex items-center justify-center transition-colors"
+                  whileHover={{ scale: 1.1, rotate: 90 }}
+                  whileTap={{ scale: 0.9 }}
+                >
+                  <X className="w-5 h-5" />
+                </motion.button>
               </div>
-              <div>
-                <SheetTitle className="text-white">Therapist Finder</SheetTitle>
-                <SheetDescription className="text-emerald-100">
-                  Find your perfect match in 3 steps
-                </SheetDescription>
-              </div>
-            </div>
-          </SheetHeader>
 
-          <div className="flex-1 flex flex-col overflow-y-auto">
-            {/* Messages Area */}
-            <div className="flex-shrink-0 p-6 space-y-4 bg-gradient-to-b from-emerald-50/30 to-white">
-              <div className="max-w-2xl mx-auto w-full space-y-4">
-                {chatMessages.map((msg) => (
-                  <div key={msg.id} className="space-y-3">
-                    {msg.type === 'bot' && (
-                      <div className="flex gap-3 justify-start">
-                        <div className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">
-                          AI
-                        </div>
-                        <div className="bg-white text-gray-800 border border-gray-200 rounded-lg rounded-bl-none px-4 py-3 shadow-sm max-w-xs lg:max-w-md whitespace-pre-wrap text-sm leading-relaxed">
-                          {msg.content}
-                        </div>
-                      </div>
-                    )}
+              {/* Messages Area - Fixed Height, No Scroll */}
+              <div className="flex-shrink-0 bg-gradient-to-b from-blue-50/30 via-cyan-50/20 to-white dark:from-gray-900 dark:via-gray-800 dark:to-gray-800 overflow-hidden">
+                <div className="p-4 lg:p-6 space-y-4 max-h-[200px] overflow-y-auto custom-scrollbar">
+                  {chatMessages.map((msg) => (
+                    <div key={msg.id} className="space-y-3">
+                      {msg.type === 'bot' && (
+                        <motion.div
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          className="flex gap-3 justify-start"
+                        >
+                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-teal-500 flex items-center justify-center text-white text-xs font-bold flex-shrink-0 shadow-md">
+                            AI
+                          </div>
+                          <div className="bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 border border-gray-200 dark:border-gray-600 rounded-2xl rounded-tl-none px-4 py-3 shadow-md max-w-xs lg:max-w-md whitespace-pre-wrap text-sm leading-relaxed">
+                            {msg.content}
+                          </div>
+                        </motion.div>
+                      )}
 
-                    {msg.type === 'user' && (
-                      <div className="flex gap-3 justify-end">
-                        <div className="bg-emerald-600 text-white rounded-lg rounded-br-none px-4 py-3 shadow-sm max-w-xs lg:max-w-md whitespace-pre-wrap text-sm">
-                          {msg.content}
-                        </div>
-                      </div>
-                    )}
+                      {msg.type === 'user' && (
+                        <motion.div
+                          initial={{ opacity: 0, x: 20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          className="flex gap-3 justify-end"
+                        >
+                          <div className="bg-gradient-to-r from-blue-600 to-teal-600 text-white rounded-2xl rounded-tr-none px-4 py-3 shadow-md max-w-xs lg:max-w-md whitespace-pre-wrap text-sm">
+                            {msg.content}
+                          </div>
+                        </motion.div>
+                      )}
 
-                    {msg.componentType === 'therapist_cards' &&
-                      msg.suggestionData?.therapists &&
-                      msg.suggestionData.therapists.length > 0 && (
-                        <div className="ml-11 space-y-3">
-                          {msg.suggestionData.therapists.map((therapist) => (
-                            <div
-                              key={therapist._id}
-                              className="bg-white border border-emerald-200 rounded-lg p-4 hover:shadow-lg transition-shadow"
-                            >
-                              <div className="flex justify-between items-start mb-2">
-                                <div>
-                                  <h4 className="font-semibold text-base text-gray-900">
-                                    {therapist.name}
-                                  </h4>
-                                  <p className="text-xs text-gray-500 mt-0.5">
-                                    {therapist.experienceYears}+ years experience
+                      {msg.componentType === 'therapist_cards' &&
+                        msg.suggestionData?.therapists &&
+                        msg.suggestionData.therapists.length > 0 && (
+                          <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="ml-11 space-y-3"
+                          >
+                            {msg.suggestionData.therapists.map((therapist) => (
+                              <div
+                                key={therapist._id}
+                                className="bg-white dark:bg-gray-700 border-2 border-teal-200 dark:border-teal-800 rounded-2xl p-4 hover:shadow-xl transition-all duration-300 hover:border-teal-300 dark:hover:border-teal-600"
+                              >
+                                <div className="flex justify-between items-start mb-3">
+                                  <div>
+                                    <h4 className="font-bold text-base text-gray-900 dark:text-white">
+                                      {therapist.name}
+                                    </h4>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                                      {therapist.experienceYears}+ years experience
+                                    </p>
+                                  </div>
+                                  <span className="text-xs bg-gradient-to-r from-teal-100 to-cyan-100 dark:from-teal-900/40 dark:to-cyan-900/40 text-teal-700 dark:text-teal-300 px-3 py-1.5 rounded-full font-bold">
+                                    {Math.round(therapist.matchScore * 100)}% match
+                                  </span>
+                                </div>
+
+                                <div className="mb-3">
+                                  <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                    Specializations:
+                                  </p>
+                                  <div className="flex flex-wrap gap-2">
+                                    {therapist.specializations.slice(0, 4).map((spec, idx) => (
+                                      <span
+                                        key={idx}
+                                        className="text-xs bg-gradient-to-r from-teal-50 to-cyan-50 dark:from-teal-900/30 dark:to-cyan-900/30 text-teal-700 dark:text-teal-300 px-3 py-1 rounded-full border border-teal-200 dark:border-teal-700"
+                                      >
+                                        {spec}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+
+                                <div className="mb-3">
+                                  <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                                    Languages:
+                                  </p>
+                                  <p className="text-xs text-gray-600 dark:text-gray-400">
+                                    {therapist.languages.join(', ')}
                                   </p>
                                 </div>
-                                <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded font-medium">
-                                  {Math.round(therapist.matchScore * 100)}% match
-                                </span>
+
+                                {therapist.fee && (
+                                  <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">
+                                    <span className="font-semibold">Fee:</span> ₹{therapist.fee}
+                                  </p>
+                                )}
+
+                                <motion.button
+                                  className="w-full bg-gradient-to-r from-blue-600 to-teal-600 hover:from-blue-700 hover:to-teal-700 text-white text-sm py-2.5 px-4 rounded-xl transition-all font-semibold shadow-md hover:shadow-lg"
+                                  onClick={() => {
+                                    setIsOpen(false);
+                                    navigate(`/therapists/${therapist._id}`);
+                                  }}
+                                  whileHover={{ scale: 1.02 }}
+                                  whileTap={{ scale: 0.98 }}
+                                >
+                                  View Profile
+                                </motion.button>
                               </div>
+                            ))}
+                          </motion.div>
+                        )}
 
-                              <div className="mb-3">
-                                <p className="text-xs font-semibold text-gray-600 mb-1">
-                                  Specializations:
+                      {msg.suggestionData?.analysis?.safety_flag &&
+                        msg.suggestionData.emergency_message && (
+                          <motion.div
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            className="ml-11 bg-red-50 dark:bg-red-900/20 border-2 border-red-200 dark:border-red-800 rounded-2xl p-4"
+                          >
+                            <div className="flex gap-3">
+                              <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+                              <div>
+                                <p className="text-sm text-red-700 dark:text-red-400 font-bold mb-1">
+                                  ⚠️ Important Safety Notice
                                 </p>
-                                <div className="flex flex-wrap gap-1">
-                                  {therapist.specializations.slice(0, 4).map((spec, idx) => (
-                                    <span
-                                      key={idx}
-                                      className="text-xs bg-emerald-50 text-emerald-700 px-2 py-1 rounded"
-                                    >
-                                      {spec}
-                                    </span>
-                                  ))}
-                                </div>
-                              </div>
-
-                              <div className="mb-3">
-                                <p className="text-xs font-semibold text-gray-600 mb-1">
-                                  Languages:
-                                </p>
-                                <p className="text-xs text-gray-700">
-                                  {therapist.languages.join(', ')}
+                                <p className="text-xs text-red-600 dark:text-red-300">
+                                  {msg.suggestionData.emergency_message}
                                 </p>
                               </div>
-
-                              {therapist.fee && (
-                                <p className="text-xs text-gray-600 mb-3">
-                                  <span className="font-semibold">Fee:</span> ₹{therapist.fee}
-                                </p>
-                              )}
-
-                              <button
-                                className="w-full bg-emerald-600 text-white text-xs py-2 px-3 rounded hover:bg-emerald-700 transition-colors font-medium"
-                                onClick={() => navigate(`/therapist/detail/${therapist._id}`)}
-                              >
-                                View Profile
-                              </button>
                             </div>
-                          ))}
-                        </div>
-                      )}
-
-                    {msg.suggestionData?.analysis?.safety_flag &&
-                      msg.suggestionData.emergency_message && (
-                        <div className="ml-11 bg-red-50 border border-red-200 rounded-lg p-4">
-                          <div className="flex gap-2">
-                            <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
-                            <div>
-                              <p className="text-sm text-red-700 font-semibold mb-1">
-                                ⚠️ Important Safety Notice
-                              </p>
-                              <p className="text-xs text-red-600">
-                                {msg.suggestionData.emergency_message}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                  </div>
-                ))}
-
-                {loading && (
-                  <div className="flex gap-3 justify-start">
-                    <div className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">
-                      AI
+                          </motion.div>
+                        )}
                     </div>
-                    <div className="bg-white text-gray-800 border border-gray-200 rounded-lg rounded-bl-none px-4 py-2">
-                      <div className="flex gap-1">
-                        <div className="w-2 h-2 bg-emerald-600 rounded-full animate-bounce"></div>
-                        <div
-                          className="w-2 h-2 bg-emerald-600 rounded-full animate-bounce"
-                          style={{ animationDelay: '0.1s' }}
-                        ></div>
-                        <div
-                          className="w-2 h-2 bg-emerald-600 rounded-full animate-bounce"
-                          style={{ animationDelay: '0.2s' }}
-                        ></div>
+                  ))}
+
+                  {loading && (
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="flex gap-3 justify-start"
+                    >
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-teal-500 flex items-center justify-center text-white text-xs font-bold flex-shrink-0 shadow-md">
+                        AI
                       </div>
-                    </div>
-                  </div>
-                )}
+                      <div className="bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 border border-gray-200 dark:border-gray-600 rounded-2xl rounded-tl-none px-4 py-3 shadow-md">
+                        <div className="flex gap-1.5">
+                          <div className="w-2 h-2 bg-teal-600 rounded-full animate-bounce"></div>
+                          <div
+                            className="w-2 h-2 bg-teal-600 rounded-full animate-bounce"
+                            style={{ animationDelay: '0.1s' }}
+                          ></div>
+                          <div
+                            className="w-2 h-2 bg-teal-600 rounded-full animate-bounce"
+                            style={{ animationDelay: '0.2s' }}
+                          ></div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
 
-                <div ref={messagesEndRef} />
+                  <div ref={messagesEndRef} />
+                </div>
               </div>
-            </div>
 
-            {/* Input Area / Components */}
-            <div className="bg-white border-t border-gray-200 p-4 shadow-lg">
-              <div className="max-w-2xl mx-auto">
-                {chatStep === 'intake_form' && (
-                  <IntakeForm
-                    currentStep={intakeFormStep}
-                    formData={intakeFormData}
-                    onAnswerSelect={handleIntakeFormAnswer}
-                    onNext={handleIntakeFormNext}
-                    onPrevious={handleIntakeFormPrevious}
-                    isLastStep={intakeFormStep === 5}
-                  />
-                )}
+              {/* Input Area / Components - Scrollable */}
+              <div className="flex-1 overflow-y-auto bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-lg custom-scrollbar">
+                <div className="p-4 lg:p-5 max-w-full">
+                  {chatStep === 'intake_form' && (
+                    <IntakeForm
+                      currentStep={intakeFormStep}
+                      formData={intakeFormData}
+                      onAnswerSelect={handleIntakeFormAnswer}
+                      onNext={handleIntakeFormNext}
+                      onPrevious={handleIntakeFormPrevious}
+                      isLastStep={intakeFormStep === 5}
+                    />
+                  )}
 
-                {chatStep === 'follow_up' && intakeFormData.primaryAreaOfConcern && (
-                  <DynamicFollowUp
-                    primaryArea={intakeFormData.primaryAreaOfConcern}
-                    followUpAnswers={followUpAnswers}
-                    onAnswerSelect={(path, value) => {
-                      const keys = path.split('.');
-                      setFollowUpAnswers((prev) => {
-                        const updated: FollowUpAnswers = { ...prev };
-                        let current: Record<string, unknown> = updated as Record<string, unknown>;
+                  {chatStep === 'follow_up' && intakeFormData.primaryAreaOfConcern && (
+                    <DynamicFollowUp
+                      primaryArea={intakeFormData.primaryAreaOfConcern}
+                      followUpAnswers={followUpAnswers}
+                      onAnswerSelect={(path, value) => {
+                        const keys = path.split('.');
+                        setFollowUpAnswers((prev) => {
+                          const updated: FollowUpAnswers = { ...prev };
+                          let current: Record<string, unknown> = updated as Record<string, unknown>;
 
-                        for (let i = 0; i < keys.length - 1; i++) {
-                          const key = keys[i];
-                          const next = (current[key] as Record<string, unknown> | undefined) ?? {};
-                          (current as Record<string, unknown>)[key] = next;
-                          current = next;
-                        }
+                          for (let i = 0; i < keys.length - 1; i++) {
+                            const key = keys[i];
+                            const next = (current[key] as Record<string, unknown> | undefined) ?? {};
+                            (current as Record<string, unknown>)[key] = next;
+                            current = next;
+                          }
 
-                        const lastKey = keys[keys.length - 1];
-                        (current as Record<string, unknown>)[lastKey] = value;
+                          const lastKey = keys[keys.length - 1];
+                          (current as Record<string, unknown>)[lastKey] = value;
 
-                        return updated;
-                      });
-                    }}
-                    onComplete={handleFollowUpComplete}
-                    onSkip={handleFollowUpSkip}
-                  />
-                )}
+                          return updated;
+                        });
+                      }}
+                      onComplete={handleFollowUpComplete}
+                      onSkip={handleFollowUpSkip}
+                    />
+                  )}
 
-                {chatStep === 'booking_flow' && suggestedTherapists.length > 0 && (
-                  <BookingFlow
-                    therapists={suggestedTherapists}
-                    onBookingComplete={handleBookingComplete}
-                    onCancel={handleBookingCancel}
-                  />
-                )}
+                  {chatStep === 'booking_flow' && suggestedTherapists.length > 0 && (
+                    <BookingFlow
+                      therapists={suggestedTherapists}
+                      onBookingComplete={handleBookingComplete}
+                      onCancel={handleBookingCancel}
+                    />
+                  )}
 
-                {chatStep === 'completed' && (
-                  <button
-                    onClick={handleReset}
-                    className="w-full px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium"
-                  >
-                    Start Over
-                  </button>
-                )}
+                  {chatStep === 'completed' && (
+                    <motion.button
+                      onClick={handleReset}
+                      className="w-full px-4 py-3 bg-gradient-to-r from-blue-600 to-teal-600 hover:from-blue-700 hover:to-teal-700 text-white rounded-xl transition-all font-semibold shadow-md hover:shadow-lg"
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      Start Over
+                    </motion.button>
+                  )}
+                </div>
               </div>
-            </div>
-          </div>
-        </SheetContent>
-      </Sheet>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </>
   );
 };
