@@ -83,7 +83,7 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
           onClick: handleLogoutConfirm,
           loading: isLoggingOut
         }}
-        cancelButton={{
+        cancelButton={{ 
           label: "Cancel",
           variant: "secondary",
           onClick: handleLogoutCancel,
