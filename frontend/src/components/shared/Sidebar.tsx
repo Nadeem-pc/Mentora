@@ -152,7 +152,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
                     {!isCollapsed && (
                       <>
-                        <span className="flex-1">{item.name}</span>
+                        <span className="flex-1 pl-3 text-left">{item.name}</span>
                         {item.badge && (
                           <span className="ml-3 inline-block py-0.5 px-2 text-xs font-medium bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-full">
                             {item.badge}
