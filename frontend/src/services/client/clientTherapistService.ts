@@ -42,5 +42,17 @@ export const clientTherapistService = {
             console.error(error);
             throw error;
         }
+    },
+
+    getTherapistReviews: async (therapistId: string) => {
+        try {
+            const response = await axiosInstance.get(
+                API.CLIENT.GET_THERAPIST_REVIEWS(therapistId)
+            );
+            return response.data;
+        } catch (error) {
+            console.error('Error fetching therapist reviews:', error);
+            throw error;
+        }
     }
 };
