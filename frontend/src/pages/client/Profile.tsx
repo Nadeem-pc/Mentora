@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import profile_avatar from '../../assets/pngtree-avatar-icon-profile-icon-member-login-vector-isolated-png-image_5247852-removebg-preview.png';
-import { User, Edit3, Camera, Mail, Phone, Calendar, LogOut, X, Clock, Video, CheckCircle, XCircle, CalendarDays, IndianRupee, AlertCircle, Ban, Wallet, ArrowUpRight, ArrowDownLeft, Star } from 'lucide-react';
+import { User, Edit3, Camera, Mail, Phone, Calendar, LogOut, X, Clock, Video, CheckCircle, XCircle, CalendarDays, IndianRupee, AlertCircle, Ban, Wallet, ArrowUpRight, ArrowDownLeft, Star, CheckCircle as CheckCircleIcon, MessageCircle } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import ImageCropper from '@/components/shared/ImageCropper';
 import { S3BucketUtil } from '@/utils/S3Bucket.util';
@@ -102,6 +103,12 @@ const UserProfilePage: React.FC = () => {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [isLoadingAppointments, setIsLoadingAppointments] = useState(false);
   const [appointmentFilter, setAppointmentFilter] = useState<'all' | 'upcoming' | 'past'>('all');
+  const [appointmentPagination, setAppointmentPagination] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    limit: 5,
+    totalItems: 0
+  });
   const [selectedAppointmentDetail, setSelectedAppointmentDetail] = useState<AppointmentDetail | null>(null);
   const [selectedAppointmentIdForDetail, setSelectedAppointmentIdForDetail] = useState<string | null>(null);
   const [isLoadingAppointmentDetail, setIsLoadingAppointmentDetail] = useState(false);
@@ -274,9 +281,9 @@ const UserProfilePage: React.FC = () => {
         toast.success(message);
         handleCancelModalClose();
       }
-    } catch (error: unknown) {
+    } catch (error: any) {
       console.error('Error cancelling appointment:', error);
-      const errorMessage = error.response?.data?.message || 'Failed to cancel appointment';
+      const errorMessage = error?.response?.data?.message || 'Failed to cancel appointment';
       toast.error(errorMessage);
     } finally {
       setIsCancelling(false);
@@ -411,7 +418,7 @@ const UserProfilePage: React.FC = () => {
     const fieldsToValidate: (keyof ValidationErrors)[] = ['firstName', 'lastName', 'email', 'phone', 'gender', 'dob'];
     
     fieldsToValidate.forEach((field) => {
-      const error = validateField(field, formData[field]);
+      const error = validateField(field, String(formData[field] || ""));
       if (error) {
         errors[field] = error;
         isValid = false;
@@ -450,9 +457,9 @@ const UserProfilePage: React.FC = () => {
 
   useEffect(() => {
     if (activeSection === 'Sessions') {
-      fetchAppointments();
+      fetchAppointments({ page: 1 });
     }
-  }, [activeSection, appointmentFilter]);
+  }, [activeSection]);
 
   useEffect(() => {
     if (activeSection === 'Wallet') {
@@ -513,10 +520,24 @@ const UserProfilePage: React.FC = () => {
     fetchWallet({ page: targetPage });
   };
 
-  const fetchAppointments = async () => {
+  const fetchAppointments = async (overrides?: {
+    page?: number;
+    status?: 'all' | 'upcoming' | 'past';
+  }) => {
     try {
       setIsLoadingAppointments(true);
-      const params = appointmentFilter !== 'all' ? { status: appointmentFilter } : {};
+      const targetPage = overrides?.page ?? appointmentPagination.currentPage;
+      const targetFilter = overrides?.status ?? appointmentFilter;
+      
+      const params: { status?: string; page?: number; limit?: number } = {
+        page: targetPage,
+        limit: appointmentPagination.limit
+      };
+      
+      if (targetFilter !== 'all') {
+        params.status = targetFilter;
+      }
+      
       const response = await clientProfileService.getAppointments(params);
       
       if (response.success) {
@@ -536,6 +557,17 @@ const UserProfilePage: React.FC = () => {
           })
         );
         setAppointments(appointmentsWithImages);
+        
+        // Update pagination - if backend doesn't return total, we'll estimate
+        const totalItems = response.totalItems || appointmentsWithImages.length;
+        const totalPages = Math.ceil(totalItems / appointmentPagination.limit) || 1;
+        
+        setAppointmentPagination(prev => ({
+          ...prev,
+          currentPage: response.page || targetPage,
+          totalPages: response.totalPages || totalPages,
+          totalItems: response.totalItems || totalItems
+        }));
       }
     } catch (error) {
       console.error("Error fetching appointments:", error);
@@ -543,6 +575,19 @@ const UserProfilePage: React.FC = () => {
     } finally {
       setIsLoadingAppointments(false);
     }
+  };
+  
+  const handleAppointmentFilterChange = (filter: 'all' | 'upcoming' | 'past') => {
+    setAppointmentFilter(filter);
+    fetchAppointments({ page: 1, status: filter });
+  };
+  
+  const handleAppointmentPageChange = (direction: 'prev' | 'next') => {
+    const targetPage = direction === 'next' 
+      ? appointmentPagination.currentPage + 1 
+      : appointmentPagination.currentPage - 1;
+    if (targetPage < 1 || targetPage > appointmentPagination.totalPages) return;
+    fetchAppointments({ page: targetPage });
   };
 
   const handleViewDetails = async (appointmentId: string) => {
@@ -645,7 +690,7 @@ const UserProfilePage: React.FC = () => {
     Object.keys(formData).forEach((key) => {
       const typedKey = key as keyof UserProfile;
       if (formData[typedKey] !== originalData[typedKey]) {
-        changedFields[typedKey] = formData[typedKey];
+        (changedFields as any)[typedKey] = formData[typedKey];
       }
     });
     
@@ -679,9 +724,9 @@ const UserProfilePage: React.FC = () => {
         setIsEditing(false);
         setValidationErrors({});
       }
-    } catch (error: unknown) {
+    } catch (error: any) {
       console.error("Error updating profile:", error);
-      const errorMessage = error.response?.data?.message || "Failed to update profile";
+      const errorMessage = error?.response?.data?.message || "Failed to update profile";
       toast.error(errorMessage);
     } finally {
       setIsSaving(false);
@@ -701,14 +746,14 @@ const UserProfilePage: React.FC = () => {
       setShowLogoutModal(false);
       navigate("/auth/form", { replace: true });
       toast.success(response.data.message);
-    } catch (error: unknown) {
+    } catch (error: any) {
       console.error("Error during logout:", error);
-      const errorMessage = error.response?.data?.message || "Failed to logout";
+      const errorMessage = error?.response?.data?.message || "Failed to logout";
       toast.error(errorMessage);
     }
   };
 
-  const handleMenuItemClick = (item: unknown) => {
+  const handleMenuItemClick = (item: { label: string; id: string }) => {
     if (item.label === 'Logout') {
       setShowLogoutModal(true);
     } else {
@@ -782,9 +827,9 @@ const UserProfilePage: React.FC = () => {
       } else {
         toast.error("Failed to get image URL from server");
       }
-    } catch (error: unknown) {
+    } catch (error: any) {
       console.error("Error updating profile image:", error);
-      const errorMessage = error.response?.data?.message || error.message || "Failed to update profile image";
+      const errorMessage = error?.response?.data?.message || error?.message || "Failed to update profile image";
       toast.error(errorMessage);
     } finally {
       setIsUploadingImage(false);
@@ -814,6 +859,7 @@ const UserProfilePage: React.FC = () => {
           }
 
           setUserProfile({
+            _id: client._id || "",
             firstName: client.firstName || "",
             lastName: client.lastName || "",
             gender: client.gender || "",
@@ -821,9 +867,9 @@ const UserProfilePage: React.FC = () => {
             email: client.email || "",
             phone: client.phone || "",
             profileImage: profileImgUrl,
-            createdAt: client.createdAt
-              ? new Date(client.createdAt).toLocaleString("en-US", { month: "long", year: "numeric" })
-              : "",
+            role: client.role || "",
+            status: client.status || "",
+            createdAt: client.createdAt ? new Date(client.createdAt) : undefined,
           });
         }
       } catch (error) {
@@ -901,9 +947,9 @@ const UserProfilePage: React.FC = () => {
 
   const getStatusBadge = (status: string) => {
     const styles = {
-      scheduled: 'bg-blue-100 text-blue-700 border-blue-200',
-      completed: 'bg-green-100 text-green-700 border-green-200',
-      cancelled: 'bg-red-100 text-red-700 border-red-200'
+      scheduled: 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-700',
+      completed: 'bg-teal-100 dark:bg-teal-900/40 text-teal-700 dark:text-teal-300 border-teal-200 dark:border-teal-700',
+      cancelled: 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 border-red-200 dark:border-red-700'
     };
     const icons = {
       scheduled: Clock,
@@ -913,8 +959,8 @@ const UserProfilePage: React.FC = () => {
     const Icon = icons[status as keyof typeof icons];
     
     return (
-      <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold border ${styles[status as keyof typeof styles]}`}>
-        <Icon className="w-4 h-4 mr-1" />
+      <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm font-semibold border ${styles[status as keyof typeof styles]}`}>
+        <Icon className="w-4 h-4 mr-1.5" />
         {status.charAt(0).toUpperCase() + status.slice(1)}
       </span>
     );
@@ -955,8 +1001,12 @@ const UserProfilePage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen absolute top-15 w-screen bg-gradient-to-br from-gray-50 to-green-50">
+    <div className="min-h-screen w-screen bg-gradient-to-br from-blue-50 via-white to-teal-50 dark:from-gray-900 dark:to-gray-800 relative overflow-hidden">
       <Header/>
+      
+      {/* Decorative background elements */}
+      <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-blue-200/20 to-teal-200/20 rounded-full blur-3xl"></div>
+      <div className="absolute bottom-0 left-0 w-96 h-96 bg-gradient-to-br from-teal-200/20 to-cyan-200/20 rounded-full blur-3xl"></div>
       {cropperImage && (
         <ImageCropper
           image={cropperImage}
@@ -1009,272 +1059,377 @@ const UserProfilePage: React.FC = () => {
         </div>
       )}
 
-      <div className="bg-primary px-8 py-12 relative overflow-hidden">
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute inset-0 bg-gradient-to-r from-teal-400 to-emerald-500"></div>
-          <div className="absolute top-0 left-0 w-full h-full bg-pattern opacity-20"></div>
-        </div>
-        
-        <div className="relative z-10 flex items-center justify-between">
-          <div className="flex items-center space-x-10">
-            <div className="relative group">
-              <div className="relative">
-                <img
-                  src={userProfile?.profileImage || profile_avatar}
-                  alt=""
-                  className="w-32 h-32 rounded-full border-4 border-white object-cover shadow-xl"
-                />
-                <button 
-                  className={`absolute bottom-2 right-2 text-white p-2 rounded-full shadow-lg transition-all duration-200 ${
-                    isUploadingImage 
-                      ? 'bg-gray-500 cursor-not-allowed' 
-                      : 'bg-teal-600 hover:bg-teal-700 hover:scale-110'
-                  }`}
-                  onClick={handleButtonClick}
-                  disabled={isUploadingImage}
-                  title="Upload profile picture"
-                >
-                  <Camera className={`w-4 h-4 ${isUploadingImage ? 'animate-pulse' : ''}`} />
-                </button>
+      {/* Enhanced Profile Header */}
+      <div className="relative z-10 pt-24 pb-12 px-4 md:px-8">
+        <motion.div 
+          className="bg-gradient-to-br from-blue-600 via-cyan-600 to-teal-600 rounded-3xl shadow-2xl p-8 md:p-12 relative overflow-hidden"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+        >
+          {/* Decorative orbs */}
+          <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
+          <div className="absolute bottom-0 left-0 w-48 h-48 bg-cyan-400/20 rounded-full blur-2xl"></div>
+          
+          <div className="relative z-10 flex flex-col md:flex-row items-center md:items-start md:justify-between gap-6">
+            <div className="flex flex-col md:flex-row items-center md:items-center gap-6">
+              <motion.div 
+                className="relative group"
+                whileHover={{ scale: 1.05 }}
+                transition={{ type: "spring", stiffness: 300 }}
+              >
+                <div className="relative">
+                  <div className="absolute inset-0 bg-gradient-to-br from-blue-400 to-teal-400 rounded-full blur-xl opacity-50 group-hover:opacity-75 transition-opacity"></div>
+                  <img
+                    src={userProfile?.profileImage || profile_avatar}
+                    alt=""
+                    className="relative w-32 h-32 rounded-full border-4 border-white/90 object-cover shadow-2xl"
+                  />
+                  <motion.button 
+                    className={`absolute bottom-0 right-0 text-white p-3 rounded-full shadow-xl transition-all duration-200 ${
+                      isUploadingImage 
+                        ? 'bg-gray-500 cursor-not-allowed' 
+                        : 'bg-gradient-to-br from-blue-600 to-teal-600 hover:from-blue-700 hover:to-teal-700'
+                    }`}
+                    onClick={handleButtonClick}
+                    disabled={isUploadingImage}
+                    title="Upload profile picture"
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                  >
+                    <Camera className={`w-5 h-5 ${isUploadingImage ? 'animate-pulse' : ''}`} />
+                  </motion.button>
 
-                <input
-                  type="file"
-                  accept="image/jpeg,image/jpg,image/png,image/webp"
-                  ref={fileInputRef}
-                  onChange={handleFileChange}
-                  className="hidden"
-                />
-              </div>
-            </div>
-            
-            <div className="space-y-2">
-              <h1 className="text-4xl font-bold text-white drop-shadow-md">
-                {userProfile?.firstName + ' ' + userProfile?.lastName}
-              </h1>
-              <div className="flex items-center space-x-4 text-emerald-200">
-                <span className="flex items-center space-x-1">
-                  <Calendar className="w-4 h-4" />
-                  <span>Member since {userProfile?.createdAt}</span>
-                </span>
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/jpg,image/png,image/webp"
+                    ref={fileInputRef}
+                    onChange={handleFileChange}
+                    className="hidden"
+                  />
+                </div>
+              </motion.div>
+              
+              <div className="text-center md:text-left space-y-2">
+                <h1 className="text-3xl md:text-4xl font-bold text-white drop-shadow-lg">
+                  {userProfile?.firstName + ' ' + userProfile?.lastName}
+                </h1>
+                <div className="flex items-center justify-center md:justify-start space-x-4 text-blue-100">
+                  <span className="flex items-center space-x-2 bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full">
+                    <Calendar className="w-4 h-4" />
+                    <span className="text-sm font-medium">Member since {userProfile?.createdAt ? new Date(userProfile.createdAt).toLocaleString("en-US", { month: "long", year: "numeric" }) : ''}</span>
+                  </span>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        </motion.div>
       </div>
 
-      <div className="flex">
-        <div className="w-80 bg-white shadow-xl border-r border-gray-200">
-          <nav className="py-8 min-h-screen">
-            {menuItems.map((item) => {
+      <div className="relative z-10 flex flex-col lg:flex-row gap-6 px-4 md:px-8 pb-12">
+        {/* Enhanced Sidebar Navigation */}
+        <motion.div 
+          className="lg:w-80 bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-3xl shadow-xl border border-teal-100 dark:border-teal-900 overflow-hidden"
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+        >
+          <nav className="py-6">
+            {menuItems.map((item, index) => {
               const IconComponent = item.icon;
               const isActive = activeSection === item.label && item.label !== 'Logout';
               
               return (
-                <button
+                <motion.button
                   key={item.id}
                   onClick={() => handleMenuItemClick(item)}
-                  className={`w-full flex items-center px-8 py-4 text-left transition-all duration-200 group ${
+                  className={`w-full flex items-center px-6 py-4 text-left transition-all duration-300 group relative ${
                     isActive 
-                      ? 'text-green-700 border-r-4 border-teal-500 bg-gradient-to-r from-green-50 to-transparent shadow-lg' 
+                      ? 'text-teal-700 dark:text-teal-400' 
                       : item.label === 'Logout'
-                      ? 'text-red-600 hover:bg-red-50 hover:text-red-700'
-                      : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                      ? 'text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20'
+                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50'
                   }`}
+                  whileHover={{ x: 4 }}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: index * 0.1 }}
                 >
-                  <div className={`p-2 rounded-lg mr-4 transition-all duration-200 ${
+                  {isActive && (
+                    <motion.div 
+                      className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-blue-600 to-teal-600 rounded-r-full"
+                      layoutId="activeIndicator"
+                      initial={false}
+                      transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                    />
+                  )}
+                  <div className={`p-2.5 rounded-xl mr-4 transition-all duration-300 ${
                     isActive 
-                      ? 'bg-green-100 shadow-md' 
+                      ? 'bg-gradient-to-br from-blue-100 to-teal-100 dark:from-blue-900/40 dark:to-teal-900/40 shadow-md' 
                       : item.label === 'Logout'
-                      ? 'bg-red-100 group-hover:bg-red-200'
-                      : 'bg-gray-100 group-hover:bg-gray-200'
+                      ? 'bg-red-100 dark:bg-red-900/30 group-hover:bg-red-200 dark:group-hover:bg-red-900/50'
+                      : 'bg-gray-100 dark:bg-gray-700 group-hover:bg-gray-200 dark:group-hover:bg-gray-600'
                   }`}>
-                    <IconComponent className="w-5 h-5" />
+                    <IconComponent className={`w-5 h-5 ${isActive ? 'text-teal-600 dark:text-teal-400' : ''}`} />
                   </div>
-                  <span className="font-semibold text-lg">{item.label}</span>
-                </button>
+                  <span className="font-semibold text-base">{item.label}</span>
+                </motion.button>
               );
             })}
           </nav>
-        </div>
+        </motion.div>
 
-        <div className="flex-1 p-8">
-          <div className="max-w-6xl">
-            {activeSection === 'Personal Details' && (
-              <>
-                <div className="flex justify-between items-center mb-8">
-                  <div>
-                    <h2 className="text-3xl text-start font-bold text-gray-900">{activeSection}</h2>
-                    <p className="text-gray-600 mt-1">Manage your personal information and preferences</p>
-                  </div>
-                  {!isEditing && (
-                    <button 
-                      onClick={() => setIsEditing(true)}
-                      className="flex items-center space-x-2 bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700 text-white px-6 py-3 rounded-xl shadow-lg transition-all duration-200 hover:shadow-xl hover:scale-105"
-                    >
-                      <Edit3 className="w-5 h-5" />
-                      <span className="font-semibold">Edit Profile</span>
-                    </button>
-                  )}
-                </div>
-              
-                <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
-                  <div className="p-8">
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                      {profileFields.map((field, index) => {
-                        const IconComponent = field.icon;
-                        const hasError = validationErrors[field.fieldKey as keyof ValidationErrors];
-                        
-                        return (
-                          <div key={index} className="group">
-                            <label className="block text-sm font-semibold text-gray-700 mb-3">
-                              <div className="flex items-center space-x-2">
-                                <IconComponent className="w-5 h-5 text-green-600" />
-                                <span>{field.label}</span>
-                                {field.required && <span className="text-red-500">*</span>}
-                              </div>
-                            </label>
-                            
-                            {isEditing ? (
-                              <div className="relative">
-                                {field.type === 'select' ? (
-                                  <select
-                                    value={(formData as unknown)?.[field.fieldKey] || ""}
-                                    onChange={(e) => handleChange(field.fieldKey, e.target.value)}
-                                    onBlur={(e) => handleBlur(field.fieldKey, e.target.value)}
-                                    className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-teal-500 transition-all duration-200 bg-white shadow-sm ${
-                                      hasError 
-                                        ? 'border-red-300 focus:border-red-400' 
-                                        : 'border-gray-200 focus:border-teal-400'
-                                    }`}
-                                  >
-                                    <option value="">{field.placeholder}</option>
-                                    {field.options?.map((option) => (
-                                      <option key={option} value={option}>
-                                        {option}
-                                      </option>
-                                    ))}
-                                  </select>
-                                ) : (
-                                  <input
-                                    type={field.type}
-                                    value={(formData as unknown)?.[field.fieldKey] || ""}
-                                    onChange={(e) => handleChange(field.fieldKey, e.target.value)}
-                                    onBlur={(e) => handleBlur(field.fieldKey, e.target.value)}
-                                    placeholder={field.placeholder}
-                                    max={field.type === 'date' ? new Date().toISOString().split('T')[0] : undefined}
-                                    className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-teal-500 transition-all duration-200 shadow-sm ${
-                                      hasError 
-                                        ? 'border-red-300 focus:border-red-400' 
-                                        : 'border-gray-200 focus:border-teal-400'
-                                    }`}
-                                  />
-                                )}
-                                {hasError && (
-                                  <div className="flex items-center mt-2 text-red-600 text-sm">
-                                    <AlertCircle className="w-4 h-4 mr-1" />
-                                    <span>{hasError}</span>
-                                  </div>
-                                )}
-                              </div>
-                            ) : (
-                              <div className="bg-green-50 border-2 border-green-100 rounded-xl p-4 group-hover:bg-green-100 transition-all duration-200">
-                                <div className="text-gray-800 font-medium">
-                                  {field.value || (
-                                    <span className="text-gray-400 italic">Add your details</span>
-                                  )}
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
+        <div className="flex-1 lg:max-w-6xl">
+          {activeSection === 'Personal Details' && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+            >
+              <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-3xl shadow-2xl border-2 border-teal-100/50 dark:border-teal-900/50 overflow-hidden relative">
+                {/* Decorative gradient background */}
+                <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-blue-100/30 via-teal-100/30 to-cyan-100/30 dark:from-blue-900/10 dark:via-teal-900/10 dark:to-cyan-900/10 rounded-full blur-3xl pointer-events-none"></div>
+                
+                <div className="relative p-6 md:p-10">
+                  {/* Header Section */}
+                  <div className="relative flex flex-col md:flex-row justify-between items-center md:items-center gap-4 mb-8 pb-6">
+                    <div className="text-center md:text-left">
+                      <h2 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-blue-600 via-teal-600 to-cyan-600 bg-clip-text text-transparent mb-2">
+                        {activeSection}
+                      </h2>
+                      <p className="text-gray-600 dark:text-gray-400 flex items-center justify-center md:justify-start gap-2">
+                        Manage your personal information and preferences
+                      </p>
                     </div>
-
-                    {isEditing && (
-                      <div className="mt-8 flex justify-end space-x-4">
-                        <button 
-                          onClick={handleCancel}
-                          disabled={isSaving}
-                          className="px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-all duration-200 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          Cancel
-                        </button>
-                        <button 
-                          onClick={handleSave}
-                          disabled={isSaving || Object.keys(validationErrors).length > 0}
-                          className="px-6 py-3 bg-gradient-to-r from-teal-500 to-green-600 text-white rounded-xl hover:from-teal-600 hover:to-green-700 transition-all duration-200 font-semibold shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
-                        >
-                          {isSaving ? (
-                            <>
-                              <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
-                              <span>Saving...</span>
-                            </>
-                          ) : (
-                            <span>Save Changes</span>
-                          )}
-                        </button>
-                      </div>
+                    {/* Gradient border line */}
+                    <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-blue-200 via-teal-300 to-cyan-200 dark:from-blue-700 dark:via-teal-600 dark:to-cyan-700"></div>
+                    {!isEditing && (
+                      <motion.button 
+                        onClick={() => setIsEditing(true)}
+                        className="relative group flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-teal-600 hover:from-blue-700 hover:to-teal-700 text-white px-6 py-3.5 rounded-xl shadow-lg transition-all duration-300 overflow-hidden"
+                        whileHover={{ scale: 1.05, y: -2 }}
+                        whileTap={{ scale: 0.95 }}
+                      >
+                        <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
+                        <Edit3 className="w-5 h-5 relative z-10" />
+                        <span className="font-medium relative z-10">Edit Profile</span>
+                      </motion.button>
                     )}
                   </div>
-                </div>
-              </>
-            )}
+                  
+                  {/* Form Grid */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
+                    {profileFields.map((field, index) => {
+                      const IconComponent = field.icon;
+                      const hasError = validationErrors[field.fieldKey as keyof ValidationErrors];
+                      
+                      return (
+                        <motion.div 
+                          key={index} 
+                          className="group relative"
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: index * 0.05 }}
+                        >
+                          {/* Label with icon and better styling */}
+                          <label className="flex items-center gap-2.5 text-sm font-medium text-gray-800 dark:text-gray-200 mb-3">
+                            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-teal-100 to-cyan-100 dark:from-teal-900/40 dark:to-cyan-900/40 group-hover:from-teal-200 group-hover:to-cyan-200 dark:group-hover:from-teal-800/60 dark:group-hover:to-cyan-800/60 transition-all duration-300 shadow-sm">
+                              <IconComponent className="w-4 h-4 text-teal-600 dark:text-teal-400" />
+                            </div>
+                            <span className="flex-1">{field.label}</span>
+                            {field.required && <span className="text-red-500">*</span>}
+                          </label>
 
-          {activeSection === 'Sessions' && (
-            <>
-              <div className="flex justify-between items-center mb-8">
-                <div>
-                  <h2 className="text-3xl text-start font-bold text-gray-900">My Sessions</h2>
-                  <p className="text-gray-600 mt-1">View all your therapy appointments and sessions</p>
-                </div>
-                
-                <div className="flex space-x-2">
-                  <button
-                    onClick={() => setAppointmentFilter('all')}
-                    className={`px-4 py-2 rounded-lg font-semibold transition-all ${
-                      appointmentFilter === 'all'
-                        ? 'bg-green-600 text-white shadow-lg'
-                        : 'bg-white text-gray-600 hover:bg-gray-50'
-                    }`}
-                  >
-                    All
-                  </button>
-                  <button
-                    onClick={() => setAppointmentFilter('upcoming')}
-                    className={`px-4 py-2 rounded-lg font-semibold transition-all ${
-                      appointmentFilter === 'upcoming'
-                        ? 'bg-green-600 text-white shadow-lg'
-                        : 'bg-white text-gray-600 hover:bg-gray-50'
-                    }`}
-                  >
-                    Upcoming
-                  </button>
-                  <button
-                    onClick={() => setAppointmentFilter('past')}
-                    className={`px-4 py-2 rounded-lg font-semibold transition-all ${
-                      appointmentFilter === 'past'
-                        ? 'bg-green-600 text-white shadow-lg'
-                        : 'bg-white text-gray-600 hover:bg-gray-50'
-                    }`}
-                  >
-                    Past
-                  </button>
+                          {isEditing ? (
+                            <div className="relative">
+                              {field.type === 'select' ? (
+                                <select
+                                  value={(formData as any)?.[field.fieldKey] || ""}
+                                  onChange={(e) => handleChange(field.fieldKey, e.target.value)}
+                                  onBlur={(e) => handleBlur(field.fieldKey, e.target.value)}
+                                  className={`w-full px-4 py-3.5 border-2 rounded-xl focus:ring-4 focus:ring-teal-500/20 dark:focus:ring-teal-400/20 transition-all duration-300 bg-white dark:bg-gray-700 shadow-md hover:shadow-lg font-medium appearance-none cursor-pointer ${
+                                    hasError 
+                                      ? 'border-red-400 dark:border-red-600 focus:border-red-500' 
+                                      : 'border-gray-200 dark:border-gray-600 focus:border-teal-500 dark:focus:border-teal-400 hover:border-teal-300 dark:hover:border-teal-600'
+                                  } text-gray-900 dark:text-gray-100`}
+                                >
+                                  <option value="">{field.placeholder}</option>
+                                  {field.options?.map((option) => (
+                                    <option key={option} value={option}>
+                                      {option}
+                                    </option>
+                                  ))}
+                                </select>
+                              ) : (
+                                <input
+                                  type={field.type}
+                                  value={String((formData as any)?.[field.fieldKey] || "")}
+                                  onChange={(e) => handleChange(field.fieldKey, e.target.value)}
+                                  onBlur={(e) => handleBlur(field.fieldKey, e.target.value)}
+                                  placeholder={field.placeholder}
+                                  max={field.type === 'date' ? new Date().toISOString().split('T')[0] : undefined}
+                                  className={`w-full px-4 py-3.5 border-2 rounded-xl focus:ring-4 focus:ring-teal-500/20 dark:focus:ring-teal-400/20 transition-all duration-300 shadow-md hover:shadow-lg font-medium placeholder:text-gray-400 dark:placeholder:text-gray-500 ${
+                                    hasError 
+                                      ? 'border-red-400 dark:border-red-600 focus:border-red-500 bg-red-50/50 dark:bg-red-900/10' 
+                                      : 'border-gray-200 dark:border-gray-600 focus:border-teal-500 dark:focus:border-teal-400 hover:border-teal-300 dark:hover:border-teal-600 bg-white dark:bg-gray-700'
+                                  } text-gray-900 dark:text-gray-100`}
+                                />
+                              )}
+                              {hasError && (
+                                <motion.div 
+                                  className="flex items-center gap-2 mt-2.5 px-3 py-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-600 dark:text-red-400 text-sm font-medium"
+                                  initial={{ opacity: 0, y: -5 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                >
+                                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                                  <span>{hasError}</span>
+                                </motion.div>
+                              )}
+                            </div>
+                          ) : (
+                            <motion.div 
+                              className="relative bg-gradient-to-br from-teal-50 via-cyan-50 to-blue-50 dark:from-teal-900/20 dark:via-cyan-900/20 dark:to-blue-900/20 border-2 border-teal-100 dark:border-teal-800 rounded-xl p-4 group-hover:border-teal-300 dark:group-hover:border-teal-600 transition-all duration-300 overflow-hidden shadow-sm hover:shadow-md"
+                              whileHover={{ scale: 1.01 }}
+                            >
+                              {/* Decorative shimmer effect */}
+                              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000"></div>
+                              
+                              <div className="relative text-gray-900 dark:text-gray-100 text-base">
+                                {field.value ? (
+                                  <span>{field.value}</span>
+                                ) : (
+                                  <span className="text-gray-400 dark:text-gray-500 italic text-sm flex items-center gap-2">
+                                    <span className="w-2 h-2 rounded-full bg-gray-300 dark:bg-gray-600 animate-pulse"></span>
+                                    Not provided yet
+                                  </span>
+                                )}
+                              </div>
+                            </motion.div>
+                          )}
+                        </motion.div>
+                      );
+                    })}
+                  </div>
+
+                  {isEditing && (
+                    <motion.div 
+                      className="mt-10 pt-8 border-t-2 border-gradient-to-r from-blue-100 via-teal-100 to-cyan-100 dark:from-blue-900/50 dark:via-teal-900/50 dark:to-cyan-900/50 flex flex-col sm:flex-row justify-end gap-4"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.2 }}
+                    >
+                        <motion.button 
+                          onClick={handleCancel}
+                          disabled={isSaving}
+                          className="relative group px-8 py-3.5 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-400 dark:hover:border-gray-500 transition-all duration-300 font-medium disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg overflow-hidden"
+                          whileHover={{ scale: 1.02, y: -2 }}
+                          whileTap={{ scale: 0.98 }}
+                        >
+                          <span className="relative z-10">Cancel</span>
+                        </motion.button>
+                        <motion.button 
+                          onClick={handleSave}
+                          disabled={isSaving || Object.keys(validationErrors).length > 0}
+                          className="relative group px-8 py-3.5 bg-gradient-to-r from-blue-600 to-teal-600 hover:from-blue-700 hover:to-teal-700 text-white rounded-xl transition-all duration-300 font-medium shadow-lg hover:shadow-2xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 overflow-hidden"
+                          whileHover={{ scale: 1.02, y: -2 }}
+                          whileTap={{ scale: 0.98 }}
+                        >
+                          {/* Shimmer effect */}
+                          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-700"></div>
+                          
+                          {isSaving ? (
+                            <>
+                              <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent relative z-10"></div>
+                              <span className="relative z-10">Saving...</span>
+                            </>
+                          ) : (
+                            <span className="relative z-10 flex items-center gap-2">
+                              <CheckCircleIcon className="w-5 h-5" />
+                              Save Changes
+                            </span>
+                          )}
+                      </motion.button>
+                    </motion.div>
+                  )}
                 </div>
               </div>
+            </motion.div>
+          )}
 
-              <div className="space-y-4">
+          {activeSection === 'Sessions' && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+            >
+              <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-3xl shadow-xl border border-teal-100 dark:border-teal-900 overflow-hidden">
+                <div className="p-6 md:p-8">
+                  <div className="flex flex-col md:flex-row justify-between items-center md:items-center gap-4 mb-8">
+                    <div className="text-center md:text-left">
+                      <h2 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-blue-600 via-teal-600 to-cyan-600 bg-clip-text text-transparent mb-2">
+                        My Sessions
+                      </h2>
+                      <p className="text-gray-600 dark:text-gray-400">View all your therapy appointments and sessions</p>
+                    </div>
+                    
+                    <div className="flex flex-wrap gap-2">
+                      <motion.button
+                        onClick={() => handleAppointmentFilterChange('all')}
+                        className={`px-5 py-2.5 rounded-xl font-semibold transition-all ${
+                          appointmentFilter === 'all'
+                            ? 'bg-gradient-to-r from-blue-600 to-teal-600 text-white shadow-lg'
+                            : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700'
+                        }`}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                      >
+                        All
+                      </motion.button>
+                      <motion.button
+                        onClick={() => handleAppointmentFilterChange('upcoming')}
+                        className={`px-5 py-2.5 rounded-xl font-semibold transition-all ${
+                          appointmentFilter === 'upcoming'
+                            ? 'bg-gradient-to-r from-blue-600 to-teal-600 text-white shadow-lg'
+                            : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700'
+                        }`}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                      >
+                        Upcoming
+                      </motion.button>
+                      <motion.button
+                        onClick={() => handleAppointmentFilterChange('past')}
+                        className={`px-5 py-2.5 rounded-xl font-semibold transition-all ${
+                          appointmentFilter === 'past'
+                            ? 'bg-gradient-to-r from-blue-600 to-teal-600 text-white shadow-lg'
+                            : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700'
+                        }`}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                      >
+                        Past
+                      </motion.button>
+                    </div>
+                  </div>
+
+                  <div className="border-t border-teal-100 dark:border-teal-900 pt-8">
+                    <div className="space-y-4 max-h-[500px] overflow-y-auto custom-scrollbar pr-2">
                 {isLoadingAppointments ? (
                   <div className="flex items-center justify-center py-12">
-                    <div className="animate-spin rounded-full h-12 w-12 border-4 border-green-500 border-t-transparent"></div>
+                    <div className="animate-spin rounded-full h-12 w-12 border-4 border-teal-500 border-t-transparent"></div>
                   </div>
                 ) : appointments.length === 0 ? (
-                  <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-12 text-center">
-                    <CalendarDays className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                    <h3 className="text-xl font-semibold text-gray-900 mb-2">No sessions found</h3>
-                    <p className="text-gray-600">You don't have any {appointmentFilter !== 'all' ? appointmentFilter : ''} appointments yet.</p>
-                  </div>
+                  <motion.div 
+                    className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-3xl shadow-xl border border-teal-100 dark:border-teal-900 p-12 text-center"
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                  >
+                    <CalendarDays className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+                    <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">No sessions found</h3>
+                    <p className="text-gray-600 dark:text-gray-400">You don't have any {appointmentFilter !== 'all' ? appointmentFilter : ''} appointments yet.</p>
+                  </motion.div>
                 ) : (
-                  appointments.map((appointment) => {
+                  appointments.map((appointment, index) => {
                     const joinCountdown = joinCountdowns[appointment._id] ?? 0;
                     const canJoinNow = joinCountdown <= 0;
                     const joinLabel = canJoinNow
@@ -1284,80 +1439,111 @@ const UserProfilePage: React.FC = () => {
                       : `Join in ${formatJoinCountdown(joinCountdown)}`;
 
                     return (
-                    <div key={appointment._id} className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden hover:shadow-2xl transition-all duration-200">
-                      <div className="p-6">
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-start space-x-4 flex-1">
-                            <img
-                              src={appointment.therapistId.profileImg || profile_avatar}
-                              alt={`${appointment.therapistId.firstName} ${appointment.therapistId.lastName}`}
-                              className="w-16 h-16 rounded-full object-cover border-2 border-green-200"
-                            />
+                    <motion.div 
+                      key={appointment._id} 
+                      className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-lg rounded-3xl shadow-xl border-2 border-teal-100 dark:border-teal-900 overflow-hidden relative group hover:border-teal-300 dark:hover:border-teal-700 transition-all duration-300"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.05 }}
+                      whileHover={{ y: -6 }}
+                    >
+                      {/* Decorative gradient overlay on hover */}
+                      <div className="absolute inset-0 bg-gradient-to-br from-teal-50/0 via-cyan-50/0 to-blue-50/0 group-hover:from-teal-50/40 group-hover:via-cyan-50/30 group-hover:to-blue-50/40 transition-all duration-500 pointer-events-none"></div>
+                      
+                      {/* Decorative corner accent */}
+                      <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-teal-400/10 to-cyan-400/10 rounded-bl-full opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                      
+                      <div className="relative p-6 md:p-8">
+                        <div className="flex flex-col gap-6">
+                          {/* Header Section with Therapist Info */}
+                          <div className="flex items-start gap-4">
+                            <div className="relative flex-shrink-0">
+                              <div className="absolute inset-0 bg-gradient-to-br from-teal-400 to-cyan-400 rounded-2xl blur-xl opacity-50 group-hover:opacity-75 transition-opacity duration-300"></div>
+                              <img
+                                src={appointment.therapistId.profileImg || profile_avatar}
+                                alt={`${appointment.therapistId.firstName} ${appointment.therapistId.lastName}`}
+                                className="relative w-20 h-20 rounded-2xl object-cover border-4 border-white dark:border-gray-700 shadow-xl"
+                              />
+                            </div>
                             
-                            <div className="flex-1">
-                              <h3 className="text-xl font-bold text-gray-900 mb-1">
-                                Dr. {appointment.therapistId.firstName} {appointment.therapistId.lastName}
-                              </h3>
-                              <p className="text-gray-600 text-sm mb-3">{appointment.therapistId.email}</p>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-start justify-between gap-4 mb-2">
+                                <div>
+                                  <h3 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white mb-1 group-hover:text-teal-600 dark:group-hover:text-teal-400 transition-colors">
+                                    Dr. {appointment.therapistId.firstName} {appointment.therapistId.lastName}
+                                  </h3>
+                                </div>
+                                {getStatusBadge(appointment.status)}
+                              </div>
                               
-                              <div className="grid grid-cols-2 gap-4">
-                                <div className="flex items-center space-x-2 text-gray-700">
-                                  <Calendar className="w-5 h-5 text-green-600" />
-                                  <span className="font-medium">{formatDate(appointment.appointmentDate)}</span>
+                              {/* Appointment Details Grid */}
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
+                                <div className="flex items-center space-x-3 p-3 bg-gradient-to-r from-teal-50 to-cyan-50 dark:from-teal-900/20 dark:to-cyan-900/20 rounded-xl border border-teal-100 dark:border-teal-800">
+                                  <div className="p-2 bg-teal-100 dark:bg-teal-900/40 rounded-lg">
+                                    <Calendar className="w-5 h-5 text-teal-600 dark:text-teal-400" />
+                                  </div>
+                                  <div>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">Date</p>
+                                    <p className="text-sm font-semibold text-gray-900 dark:text-white">{formatDate(appointment.appointmentDate)}</p>
+                                  </div>
                                 </div>
                                 
-                                <div className="flex items-center space-x-2 text-gray-700">
-                                  <Clock className="w-5 h-5 text-green-600" />
-                                  <span className="font-medium">
-                                    {appointment.slotId?.time || 'Time not available'}
-                                  </span>
+                                <div className="flex items-center space-x-3 p-3 bg-gradient-to-r from-teal-50 to-cyan-50 dark:from-teal-900/20 dark:to-cyan-900/20 rounded-xl border border-teal-100 dark:border-teal-800">
+                                  <div className="p-2 bg-teal-100 dark:bg-teal-900/40 rounded-lg">
+                                    <Clock className="w-5 h-5 text-teal-600 dark:text-teal-400" />
+                                  </div>
+                                  <div>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">Time</p>
+                                    <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                                      {appointment.slotId?.time || 'N/A'}
+                                    </p>
+                                  </div>
                                 </div>
                                 
-                                <div className="flex items-center space-x-2 text-gray-700">
-                                  <Video className="w-5 h-5 text-green-600" />
-                                  <span className="font-medium">
-                                    {appointment.slotId?.consultationModes?.length > 0 
-                                      ? appointment.slotId.consultationModes.join(', ')
-                                      : 'Mode not specified'}
-                                  </span>
+                                <div className="flex items-center space-x-3 p-3 bg-gradient-to-r from-teal-50 to-cyan-50 dark:from-teal-900/20 dark:to-cyan-900/20 rounded-xl border border-teal-100 dark:border-teal-800">
+                                  <div className="p-2 bg-blue-100 dark:bg-blue-900/40 rounded-lg">
+                                    <Video className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                                  </div>
+                                  <div>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">Mode</p>
+                                    <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                                      {appointment.slotId?.consultationModes?.length > 0 
+                                        ? appointment.slotId.consultationModes.join(', ')
+                                        : 'Not specified'}
+                                    </p>
+                                  </div>
                                 </div>
                                 
-                                <div className="flex items-center space-x-2 text-gray-700">
-                                  <IndianRupee className="w-5 h-5 text-green-600" />
-                                  <span className="font-medium">
-                                    ₹{appointment.slotId?.fees || 0}
-                                  </span>
+                                <div className="flex items-center space-x-3 p-3 bg-gradient-to-r from-teal-50 to-cyan-50 dark:from-teal-900/20 dark:to-cyan-900/20 rounded-xl border border-teal-100 dark:border-teal-800">
+                                  <div className="p-2 bg-green-100 dark:bg-green-900/40 rounded-lg">
+                                    <IndianRupee className="w-5 h-5 text-green-600 dark:text-green-400" />
+                                  </div>
+                                  <div>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">Fee</p>
+                                    <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                                      ₹{appointment.slotId?.fees || 0}
+                                    </p>
+                                  </div>
                                 </div>
                               </div>
 
-                              {appointment.notes && (
-                                <div className="mt-4 p-3 bg-green-50 rounded-lg border border-green-100">
-                                  <p className="text-sm text-gray-700">
-                                    <span className="font-semibold">Notes:</span> {appointment.notes}
-                                  </p>
-                                </div>
-                              )}
-
-                              {appointment.cancelReason && (
-                                <div className="mt-4 p-3 bg-red-50 rounded-lg border border-red-100">
-                                  <p className="text-sm text-red-700">
-                                    <span className="font-semibold">Cancel Reason:</span> {appointment.cancelReason}
-                                  </p>
-                                </div>
-                              )}
                             </div>
                           </div>
                           
-                          <div className="ml-4 flex flex-col space-y-2 items-end">
-                            {getStatusBadge(appointment.status)}
+                          {/* Action Buttons */}
+                          {selectedAppointmentIdForDetail !== appointment._id && (
+                          <div className="flex flex-wrap gap-3 pt-4 border-t border-teal-100 dark:border-teal-900">
 
                             {(appointment.status === 'scheduled' || appointment.status === 'completed') && (
-                              <button
+                              <motion.button
                                 onClick={() => navigate(`/client/chat/${appointment.therapistId._id}`)}
-                                className="flex items-center space-x-1 px-3 py-1 bg-green-50 hover:bg-green-100 text-green-700 rounded-lg text-sm font-semibold transition-all border border-green-200"
+                                className="flex items-center space-x-2 px-4 py-2.5 bg-gradient-to-r from-teal-50 to-cyan-50 dark:from-teal-900/30 dark:to-cyan-900/30 hover:from-teal-100 hover:to-cyan-100 dark:hover:from-teal-900/50 dark:hover:to-cyan-900/50 text-teal-700 dark:text-teal-300 rounded-xl text-sm font-semibold transition-all border border-teal-200 dark:border-teal-700 shadow-sm"
+                                whileHover={{ scale: 1.05, y: -2 }}
+                                whileTap={{ scale: 0.95 }}
                               >
+                                <MessageCircle className="w-4 h-4" />
                                 <span>Chat</span>
-                              </button>
+                              </motion.button>
                             )}
 
                             {appointment.status === 'scheduled' &&
@@ -1365,7 +1551,7 @@ const UserProfilePage: React.FC = () => {
                                 appointment.consultationMode === 'video' ||
                                 appointment.slotId?.consultationModes?.includes('video')
                               ) && (
-                                <button
+                                <motion.button
                                   disabled={!canJoinNow}
                                   onClick={() => {
                                     if (!canJoinNow) return;
@@ -1388,30 +1574,37 @@ const UserProfilePage: React.FC = () => {
                                       });
                                     }
                                   }}
-                                  className="flex items-center space-x-1 px-3 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-lg text-sm font-semibold transition-all border border-emerald-200 disabled:opacity-60 disabled:cursor-not-allowed"
+                                  className="flex items-center space-x-2 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-teal-600 hover:from-blue-700 hover:to-teal-700 text-white rounded-xl text-sm font-semibold transition-all disabled:opacity-60 disabled:cursor-not-allowed shadow-lg"
+                                  whileHover={{ scale: canJoinNow ? 1.05 : 1, y: canJoinNow ? -2 : 0 }}
+                                  whileTap={{ scale: canJoinNow ? 0.95 : 1 }}
                                 >
                                   <Video className="w-4 h-4" />
                                   <span>{joinLabel}</span>
-                                </button>
+                                </motion.button>
                               )}
 
                             {appointment.status === 'scheduled' && (
-                              <button
+                              <motion.button
                                 onClick={() => handleCancelClick(appointment)}
-                                className="flex items-center space-x-1 px-3 py-1 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg text-sm font-semibold transition-all border border-red-200"
+                                className="flex items-center space-x-2 px-4 py-2.5 bg-red-50 dark:bg-red-900/30 hover:bg-red-100 dark:hover:bg-red-900/50 text-red-600 dark:text-red-400 rounded-xl text-sm font-semibold transition-all border border-red-200 dark:border-red-800 shadow-sm"
+                                whileHover={{ scale: 1.05, y: -2 }}
+                                whileTap={{ scale: 0.95 }}
                               >
                                 <Ban className="w-4 h-4" />
                                 <span>Cancel</span>
-                              </button>
+                              </motion.button>
                             )}
 
-                            <button
+                            <motion.button
                               onClick={() => handleViewDetails(appointment._id)}
-                              className="flex items-center space-x-1 px-3 py-1 bg-white hover:bg-gray-50 text-gray-700 rounded-lg text-sm font-semibold transition-all border border-gray-200"
+                              className="flex items-center space-x-2 px-4 py-2.5 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-xl text-sm font-semibold transition-all border border-gray-200 dark:border-gray-600 shadow-sm"
+                              whileHover={{ scale: 1.05, y: -2 }}
+                              whileTap={{ scale: 0.95 }}
                             >
                               <span>View Details</span>
-                            </button>
+                            </motion.button>
                           </div>
+                          )}
                         </div>
 
                         {selectedAppointmentIdForDetail === appointment._id && (
@@ -1430,7 +1623,7 @@ const UserProfilePage: React.FC = () => {
                             )}
 
                             {!isLoadingAppointmentDetail && selectedAppointmentDetail && (
-                              <div className="mt-4 bg-white border border-emerald-100 rounded-xl p-4 shadow-sm space-y-4">
+                              <div className="mt-4 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-teal-100 dark:border-teal-900 rounded-xl p-4 shadow-sm space-y-4">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-700">
                                   <div>
                                     <p className="text-xs text-gray-500 mb-1">Payment Method</p>
@@ -1444,57 +1637,66 @@ const UserProfilePage: React.FC = () => {
                                   </div>
 
                                   {selectedAppointmentDetail.feedback && (
-                                    <div>
-                                      <p className="text-xs text-gray-500 mb-1">Your Rating</p>
-                                      <p className="font-medium">
-                                        {selectedAppointmentDetail.feedback.rating}/5
-                                      </p>
-                                      {selectedAppointmentDetail.feedback.review && (
-                                        <p className="mt-1 text-xs text-gray-600">
-                                          "{selectedAppointmentDetail.feedback.review}"
-                                        </p>
-                                      )}
+                                    <div className="flex flex-col items-center">
+                                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">Your Rating</p>
+                                      {renderStars(selectedAppointmentDetail.feedback.rating, false)}
                                     </div>
                                   )}
                                 </div>
 
-                                {appointment.status === 'completed' && (
-                                  <div className="pt-3 border-t border-emerald-100 space-y-3">
+                                {/* Notes and Cancel Reason - only in View Details */}
+                                {appointment.notes && (
+                                  <div className="mt-4 p-4 bg-gradient-to-r from-teal-50 to-cyan-50 dark:from-teal-900/20 dark:to-cyan-900/20 rounded-xl border border-teal-200 dark:border-teal-800">
+                                    <p className="text-sm text-gray-700 dark:text-gray-300">
+                                      <span className="font-semibold text-teal-700 dark:text-teal-400">Notes:</span> {appointment.notes}
+                                    </p>
+                                  </div>
+                                )}
+
+                                {appointment.cancelReason && (
+                                  <div className="mt-4 p-4 bg-red-50 dark:bg-red-900/20 rounded-xl border border-red-200 dark:border-red-800">
+                                    <p className="text-sm text-red-700 dark:text-red-400">
+                                      <span className="font-semibold">Cancel Reason:</span> {appointment.cancelReason}
+                                    </p>
+                                  </div>
+                                )}
+
+                                    {appointment.status === 'completed' && !selectedAppointmentDetail.feedback && (
+                                  <div className="pt-3 border-t border-teal-100 dark:border-teal-900 space-y-3">
                                     <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
                                       <div>
-                                        <h3 className="text-sm font-semibold text-gray-900">Rate Your Session</h3>
-                                        <p className="text-xs text-gray-600">How was your experience with this session?</p>
+                                        <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Rate Your Session</h3>
+                                        <p className="text-xs text-gray-600 dark:text-gray-400">How was your experience with this session?</p>
                                       </div>
-                                      {renderStars(
-                                        selectedAppointmentDetail.feedback ? selectedAppointmentDetail.feedback.rating : rating,
-                                        !selectedAppointmentDetail.feedback
-                                      )}
+                                      {renderStars(rating, true)}
                                     </div>
 
                                     <div className="space-y-2">
-                                      <label className="text-xs font-medium text-gray-700">Write a review (optional)</label>
+                                      <label className="text-xs font-medium text-gray-700 dark:text-gray-300">Write a review (optional)</label>
                                       <textarea
                                         value={review}
                                         onChange={(e) => setReview(e.target.value)}
-                                        disabled={Boolean(selectedAppointmentDetail.feedback)}
                                         placeholder="Share your experience with this session..."
-                                        className="w-full min-h-[80px] p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm disabled:bg-gray-100 disabled:text-gray-500"
+                                        className="w-full min-h-[80px] p-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-teal-500 dark:focus:ring-teal-400 focus:border-transparent text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                                       />
                                     </div>
 
-                                    {!selectedAppointmentDetail.feedback && (
-                                      <button
-                                        onClick={handleSubmitFeedback}
-                                        disabled={isSubmittingFeedback}
-                                        className="w-full md:w-auto px-4 py-2 rounded-lg text-white font-semibold bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 disabled:opacity-60 disabled:cursor-not-allowed text-sm shadow-md hover:shadow-lg transition-all"
-                                      >
-                                        {isSubmittingFeedback ? 'Submitting...' : 'Submit Review'}
-                                      </button>
-                                    )}
+                                    <motion.button
+                                      onClick={handleSubmitFeedback}
+                                      disabled={isSubmittingFeedback || rating === 0}
+                                      className="w-full md:w-auto px-4 py-2 rounded-lg text-white font-semibold bg-gradient-to-r from-blue-600 to-teal-600 hover:from-blue-700 hover:to-teal-700 disabled:opacity-60 disabled:cursor-not-allowed text-sm shadow-md hover:shadow-lg transition-all"
+                                      whileHover={{ scale: 1.02 }}
+                                      whileTap={{ scale: 0.98 }}
+                                    >
+                                      {isSubmittingFeedback ? 'Submitting...' : 'Submit Review'}
+                                    </motion.button>
+                                  </div>
+                                )}
 
-                                    {selectedAppointmentDetail.feedback && (
-                                      <p className="text-xs text-gray-500">Thank you for sharing your feedback.</p>
-                                    )}
+                                {appointment.status === 'completed' && selectedAppointmentDetail.feedback?.review && (
+                                  <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
+                                    <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Your Review</p>
+                                    <p className="text-sm text-gray-900 dark:text-gray-100">"{selectedAppointmentDetail.feedback.review}"</p>
                                   </div>
                                 )}
                               </div>
@@ -1502,42 +1704,98 @@ const UserProfilePage: React.FC = () => {
                           </div>
                         )}
                       </div>
-                    </div>
+                    </motion.div>
                   );
                   })
                 )}
+                
+                {/* Pagination Controls */}
+                {appointments.length > 0 && appointmentPagination.totalPages > 1 && (
+                  <motion.div 
+                    className="flex flex-col sm:flex-row items-center justify-between pt-6 border-t border-teal-100 dark:border-teal-900 mt-6 gap-4"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.3 }}
+                  >
+                    <div className="text-sm text-gray-600 dark:text-gray-400">
+                      Showing {((appointmentPagination.currentPage - 1) * appointmentPagination.limit) + 1} to {Math.min(appointmentPagination.currentPage * appointmentPagination.limit, appointmentPagination.totalItems)} of {appointmentPagination.totalItems} sessions
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <motion.button
+                        disabled={appointmentPagination.currentPage <= 1}
+                        onClick={() => handleAppointmentPageChange('prev')}
+                        className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-gray-700 dark:text-gray-300"
+                        whileHover={{ scale: appointmentPagination.currentPage > 1 ? 1.05 : 1 }}
+                        whileTap={{ scale: appointmentPagination.currentPage > 1 ? 0.95 : 1 }}
+                      >
+                        Previous
+                      </motion.button>
+                      <span className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gradient-to-r from-teal-50 to-cyan-50 dark:from-teal-900/30 dark:to-cyan-900/30 rounded-xl border border-teal-200 dark:border-teal-700">
+                        Page {appointmentPagination.currentPage} of {appointmentPagination.totalPages}
+                      </span>
+                      <motion.button
+                        disabled={appointmentPagination.currentPage >= appointmentPagination.totalPages}
+                        onClick={() => handleAppointmentPageChange('next')}
+                        className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-gray-700 dark:text-gray-300"
+                        whileHover={{ scale: appointmentPagination.currentPage < appointmentPagination.totalPages ? 1.05 : 1 }}
+                        whileTap={{ scale: appointmentPagination.currentPage < appointmentPagination.totalPages ? 0.95 : 1 }}
+                      >
+                        Next
+                      </motion.button>
+                      </div>
+                    </motion.div>
+                  )}
+                    </div>
+                  </div>
+                </div>
               </div>
-            </>
+            </motion.div>
           )}
 
           {activeSection === 'Wallet' && (
-            <>
-              <div className="flex justify-between items-center mb-8">
-                <div>
-                  <h2 className="text-3xl text-start font-bold text-gray-900">My Wallet</h2>
-                  <p className="text-gray-600 mt-1">View your wallet balance and transaction history</p>
-                </div>
-              </div>
-
-              {isLoadingWallet ? (
-                <div className="flex items-center justify-center py-12">
-                  <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
-                </div>
-              ) : walletData ? (
-                <div className="space-y-6">
-                  {/* Balance Card */}
-                  <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl shadow-xl p-8 text-white">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-blue-100 text-sm font-medium mb-2">Available Balance</p>
-                        <h3 className="text-4xl font-bold">₹{walletData.wallet?.balance?.toLocaleString('en-IN') || '0'}</h3>
-                      </div>
-                      <Wallet className="w-16 h-16 opacity-20" />
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+            >
+              <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-3xl shadow-xl border border-teal-100 dark:border-teal-900 overflow-hidden">
+                <div className="p-6 md:p-8">
+                  <div className="flex flex-col md:flex-row justify-between items-center md:items-center gap-4 mb-8">
+                    <div className="text-center md:text-left">
+                      <h2 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-blue-600 via-teal-600 to-cyan-600 bg-clip-text text-transparent mb-2">
+                        My Wallet
+                      </h2>
+                      <p className="text-gray-600 dark:text-gray-400">View your wallet balance and transaction history</p>
                     </div>
                   </div>
 
-                  {/* Transactions Table */}
-                  <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
+                  <div className="border-t border-teal-100 dark:border-teal-900 pt-8">
+                    {isLoadingWallet ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="animate-spin rounded-full h-12 w-12 border-4 border-teal-500 border-t-transparent"></div>
+                </div>
+              ) : walletData ? (
+                <div className="space-y-6">
+                  {/* Enhanced Balance Card */}
+                  <motion.div 
+                    className="bg-gradient-to-br from-blue-600 via-cyan-600 to-teal-600 rounded-3xl shadow-2xl p-8 text-white relative overflow-hidden"
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    whileHover={{ scale: 1.02 }}
+                  >
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
+                    <div className="absolute bottom-0 left-0 w-48 h-48 bg-cyan-400/20 rounded-full blur-2xl"></div>
+                    <div className="relative z-10 flex items-center justify-between">
+                      <div>
+                        <p className="text-blue-100 text-sm font-medium mb-2">Available Balance</p>
+                        <h3 className="text-4xl md:text-5xl font-bold">₹{walletData.wallet?.balance?.toLocaleString('en-IN') || '0'}</h3>
+                      </div>
+                      <Wallet className="w-20 h-20 opacity-30" />
+                    </div>
+                  </motion.div>
+
+                  {/* Enhanced Transactions Table */}
+                  <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-3xl shadow-xl border border-teal-100 dark:border-teal-900 overflow-hidden">
                     <div className="p-6 border-b border-gray-200 space-y-4">
                       <div>
                         <h3 className="text-xl font-semibold text-gray-900">Transaction History</h3>
@@ -1565,18 +1823,22 @@ const UserProfilePage: React.FC = () => {
                           onChange={(e) => setWalletEndDate(e.target.value)}
                           className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
                         />
-                        <button
+                        <motion.button
                           onClick={handleWalletApplyFilters}
-                          className="bg-blue-600 text-white rounded-lg px-3 py-2 text-sm hover:bg-blue-700 transition-colors"
+                          className="bg-gradient-to-r from-blue-600 to-teal-600 text-white rounded-lg px-4 py-2 text-sm hover:from-blue-700 hover:to-teal-700 transition-colors shadow-md"
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
                         >
                           Apply Filters
-                        </button>
-                        <button
+                        </motion.button>
+                        <motion.button
                           onClick={handleWalletClearFilters}
-                          className="bg-gray-200 text-gray-700 rounded-lg px-3 py-2 text-sm hover:bg-gray-300 transition-colors"
+                          className="bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg px-4 py-2 text-sm hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
                         >
                           Clear Filters
-                        </button>
+                        </motion.button>
                       </div>
                     </div>
 
@@ -1683,24 +1945,30 @@ const UserProfilePage: React.FC = () => {
                   </div>
                 </div>
               ) : (
-                <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-12 text-center">
-                  <AlertCircle className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">Unable to Load Wallet</h3>
-                  <p className="text-gray-600">Please try again later.</p>
+                <motion.div 
+                  className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-3xl shadow-xl border border-teal-100 dark:border-teal-900 p-12 text-center"
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                >
+                  <AlertCircle className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Unable to Load Wallet</h3>
+                      <p className="text-gray-600 dark:text-gray-400">Please try again later.</p>
+                    </motion.div>
+                  )}
+                  </div>
                 </div>
-              )}
-            </>
+              </div>
+            </motion.div>
           )}
-          </div>
         </div>
       </div>
 
       {/* Session Video Call Modal */}
-      {isVideoCallOpen && activeCallTherapistId && user && (
+      {isVideoCallOpen && activeCallTherapistId && user && user.id && (
         <SessionVideoCall
           isOpen={isVideoCallOpen}
           clientId={user.id}
-          therapistId={activeCallTherapistId}
+          therapistId={activeCallTherapistId as string}
           localRole="client"
           onClose={() => {
             setIsVideoCallOpen(false);
