@@ -51,4 +51,14 @@ export const therapistProfileService = {
             throw error;
         }
     },
+
+    getReviews: async () => {
+        try {
+            const { data } = await axiosInstance.get(API.THERAPIST.GET_REVIEWS);
+            return data;
+        } catch (error) {
+            console.error('Error fetching therapist reviews:', error);
+            throw error;
+        }
+    },
 };
