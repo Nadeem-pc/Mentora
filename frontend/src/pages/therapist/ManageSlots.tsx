@@ -111,7 +111,7 @@ export default function SlotManagement() {
     setEditingSchedule(updated);
   };
 
-  const updateSlot = (dayIndex: number, slotIndex: number, field: string, value: any) => {
+  const updateSlot = (dayIndex: number, slotIndex: number, field: string, value: unknown) => {
     const updated = [...editingSchedule];
     
     if (field === 'startTime' && value) {
@@ -272,7 +272,7 @@ export default function SlotManagement() {
       setIsEditing(false);
       setEditingSchedule([]);
       toast.success(weeklySchedule ? 'Weekly schedule updated successfully!' : 'Weekly schedule created successfully!');
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error saving schedule:', error);
       toast.error(error.response?.data?.message || 'Failed to save schedule');
     }
