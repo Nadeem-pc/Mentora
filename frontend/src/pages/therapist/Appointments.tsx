@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Calendar, Clock, Video, Phone, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
 import { appointmentService } from '@/services/therapist/appointmentService';
 import { axiosInstance } from '@/config/axios.config';
+import { useNavigate } from 'react-router-dom';
 
 interface Appointment {
   id: string;
@@ -35,6 +36,8 @@ export default function TherapistAppointments() {
   });
 
   const [imageUrls, setImageUrls] = useState<Record<string, string>>({});
+
+  const navigate = useNavigate();
 
 const getPreSignedURL = async (fileName: string) => {
   try {
@@ -251,6 +254,7 @@ const fetchAppointments = async (page: number, status: string) => {
                 <div
                   key={appointment.id}
                   className="bg-white rounded-2xl shadow-sm border border-gray-200 hover:shadow-lg transition-all duration-300 overflow-hidden"
+                  onClick={() => navigate(`/therapist/appointments/${appointment.id}`)}
                 >
                   <div className="p-6">
                     {/* Client Info */}
