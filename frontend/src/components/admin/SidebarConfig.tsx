@@ -1,4 +1,4 @@
-import { Users, BarChart3, ClipboardList, Wallet, Layers } from 'lucide-react';
+import { Users, BarChart3, ClipboardList, Wallet } from 'lucide-react';
 
 export const adminSidebarConfig = {
   subtitle: 'Admin Dashboard',
@@ -24,10 +24,5 @@ export const adminSidebarConfig = {
       to: '/admin/wallet',
       icon: <Wallet className="w-5 h-5"/>
     },
-    {
-      name: "Subscription",
-      to: '/admin/subscription',
-      icon: <Layers className="w-5 h-5"/>
-    }
   ]
 };
