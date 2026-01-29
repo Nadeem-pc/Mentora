@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ChevronLeft, MessageSquare, Video, Phone, Calendar, Briefcase, GraduationCap, Loader2, X, Languages, Award, Clock } from 'lucide-react';
+import { ChevronLeft, MessageSquare, Video, Phone, Calendar, Briefcase, GraduationCap, Loader2, X, Languages, Award, Clock, Star } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useParams } from 'react-router-dom';
 import { axiosInstance } from '@/config/axios.config';
@@ -39,6 +39,7 @@ interface Therapist {
   title: string;
   subtitle: string;
   image: string;
+  rating: number;
   experience: string;
   qualification: string;
   languages: string[];
@@ -48,6 +49,17 @@ interface Therapist {
   gender: string;
   email: string;
   phone: string;
+}
+
+interface TherapistReview {
+  id: string;
+  rating: number;
+  review: string;
+  createdAt: string | Date;
+  client: {
+    fullName: string;
+    profileImg?: string | null;
+  };
 }
 
 export default function TherapistDetailPage() {
@@ -70,6 +82,12 @@ export default function TherapistDetailPage() {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [sessionPrice, setSessionPrice] = useState(0);
 
+  const [reviews, setReviews] = useState<TherapistReview[]>([]);
+  const [isLoadingReviews, setIsLoadingReviews] = useState(false);
+  const [reviewsError, setReviewsError] = useState<string | null>(null);
+  const [reviewImageUrls, setReviewImageUrls] = useState<Record<string, string>>({});
+  const [totalRatingsCount, setTotalRatingsCount] = useState(0);
+
   const navigate = useNavigate();
   const { therapistId } = useParams<{ therapistId: string }>();
 
@@ -85,6 +103,18 @@ export default function TherapistDetailPage() {
         throw new Error(error.message);
       }
       throw error;
+    }
+  };
+
+  const getClientImageURL = async (fileName: string) => {
+    try {
+      const response = await axiosInstance.get('/client/s3-getPresigned-url', {
+        params: { key: fileName },
+      });
+      return response.data.get_fileURL || response.data.getURL || '';
+    } catch (error) {
+      console.error('Error getting client image pre-signed URL:', error);
+      return '';
     }
   };
 
@@ -181,6 +211,61 @@ useEffect(() => {
       getProfileImg();
     }
   }, [therapist]);
+
+  // Fetch therapist reviews
+  useEffect(() => {
+    const fetchReviews = async () => {
+      if (!therapistId) return;
+
+      try {
+        setIsLoadingReviews(true);
+        setReviewsError(null);
+
+        const response = await clientTherapistService.getTherapistReviews(therapistId);
+
+        if (response.success && Array.isArray(response.data)) {
+          const rawReviews = response.data as TherapistReview[];
+
+          // Only keep reviews that actually have feedback text
+          const filteredReviews = rawReviews.filter((review) =>
+            typeof review.review === 'string' && review.review.trim().length > 0
+          );
+
+          // Total count based only on reviews with feedback
+          setTotalRatingsCount(filteredReviews.length);
+
+          setReviews(filteredReviews);
+
+          // Load client profile images when keys are available
+          const urlPromises = filteredReviews.map(async (review) => {
+            if (review.client?.profileImg) {
+              const url = await getClientImageURL(review.client.profileImg);
+              return { id: review.id, url };
+            }
+            return { id: review.id, url: '' };
+          });
+
+          const urls = await Promise.all(urlPromises);
+          const urlMap = urls.reduce((acc, { id, url }) => {
+            if (url) acc[id] = url;
+            return acc;
+          }, {} as Record<string, string>);
+          setReviewImageUrls(urlMap);
+        } else {
+          setReviews([]);
+          setReviewImageUrls({});
+          setTotalRatingsCount(0);
+        }
+      } catch (error) {
+        console.error('Error fetching therapist reviews:', error);
+        setReviewsError('Failed to load reviews');
+      } finally {
+        setIsLoadingReviews(false);
+      }
+    };
+
+    fetchReviews();
+  }, [therapistId]);
 
   useEffect(() => {
     const fetchAvailableDates = async () => {
@@ -605,6 +690,19 @@ if (error || !therapist) {
                       {therapist.languages.join(', ')}
                     </span>
                   </div>
+
+                  {/* Overall Rating */}
+                  <div className="mt-4 flex items-center gap-3">
+                    <div className="flex items-center gap-2">
+                      <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
+                      <span className="text-md font-semibold text-gray-900 dark:text-white">
+                        {therapist.rating > 0 ? therapist.rating.toFixed(1) : 'New • Be the first to review'}
+                      </span>
+                      {therapist.rating > 0 && (
+                        <span className="text-sm text-gray-500 dark:text-gray-400">overall rating</span>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
             </motion.div>
@@ -643,7 +741,14 @@ if (error || !therapist) {
                       : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
                   }`}
                 >
-                  Reviews
+                  <span className="flex items-center justify-center gap-2">
+                    <span>Reviews</span>
+                    {totalRatingsCount > 0 && (
+                      <span className="inline-flex items-center justify-center px-2 py-0.5 text-xs font-semibold rounded-full bg-teal-50 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300 border border-teal-200 dark:border-teal-700">
+                        {totalRatingsCount}
+                      </span>
+                    )}
+                  </span>
                   {activeTab === 'reviews' && (
                     <motion.div 
                       className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-blue-600 to-teal-600"
@@ -696,10 +801,99 @@ if (error || !therapist) {
                       animate={{ opacity: 1, x: 0 }}
                       exit={{ opacity: 0, x: 20 }}
                       transition={{ duration: 0.3 }}
-                      className="text-center py-12"
+                      className="py-4"
                     >
-                      <MessageSquare className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
-                      <p className="text-gray-500 dark:text-gray-400 text-lg">Reviews content goes here</p>
+                      {isLoadingReviews && (
+                        <div className="flex justify-center py-8">
+                          <div className="relative">
+                            <Loader2 className="w-8 h-8 animate-spin text-teal-600" />
+                            <div className="absolute inset-0 bg-teal-400/20 rounded-full blur-xl"></div>
+                          </div>
+                        </div>
+                      )}
+
+                      {!isLoadingReviews && reviewsError && (
+                        <div className="text-center py-8 text-red-500 dark:text-red-400">
+                          {reviewsError}
+                        </div>
+                      )}
+
+                      {!isLoadingReviews && !reviewsError && reviews.length === 0 && (
+                        <div className="text-center py-12">
+                          <MessageSquare className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+                          <p className="text-gray-500 dark:text-gray-400 text-lg">
+                            No reviews yet. 
+                            {/* No reviews yet. Be the first to share your experience. */}
+                          </p>
+                        </div>
+                      )}
+
+                      {!isLoadingReviews && !reviewsError && reviews.length > 0 && (
+                        <div className="space-y-4 max-h-80 overflow-y-auto scrollbar-hide text-left">
+                          {reviews.map((review) => {
+                            const created = new Date(review.createdAt);
+                            const formattedDate = created.toLocaleDateString('en-US', {
+                              year: 'numeric',
+                              month: 'short',
+                              day: 'numeric',
+                            });
+                            const avatarUrl = reviewImageUrls[review.id];
+                            const initials = review.client.fullName
+                              .split(' ')
+                              .filter(Boolean)
+                              .map((n) => n[0])
+                              .join('')
+                              .slice(0, 2)
+                              .toUpperCase();
+
+                            return (
+                              <div
+                                key={review.id}
+                                className="bg-white/90 dark:bg-gray-800/90 rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700 flex gap-4"
+                              >
+                                <div className="flex-shrink-0">
+                                  {avatarUrl ? (
+                                    <img
+                                      src={avatarUrl}
+                                      alt={review.client.fullName}
+                                      className="w-10 h-10 rounded-full object-cover border border-teal-200 dark:border-teal-700"
+                                    />
+                                  ) : (
+                                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-500 to-cyan-500 flex items-center justify-center text-white font-semibold text-sm">
+                                      {initials}
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="flex-1">
+                                  <div className="flex items-center justify-between mb-1">
+                                    <h4 className="font-semibold text-gray-900 dark:text-white">
+                                      {review.client.fullName}
+                                    </h4>
+                                    <span className="text-xs text-gray-500 dark:text-gray-400">{formattedDate}</span>
+                                  </div>
+                                  <div className="flex items-center gap-1 mb-2">
+                                    {[1, 2, 3, 4, 5].map((star) => (
+                                      <span
+                                        key={star}
+                                        className={
+                                          star <= review.rating
+                                            ? 'text-amber-400'
+                                            : 'text-gray-300 dark:text-gray-600'
+                                        }
+                                      >
+                                        ★
+                                      </span>
+                                    ))}
+                                  </div>
+                                  <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+                                    {review.review}
+                                  </p>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
                     </motion.div>
                   )}
                 </AnimatePresence>
