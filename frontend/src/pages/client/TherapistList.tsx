@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Filter, X, Clock, Video, Phone, MessageSquare, Award, Languages, IndianRupee, Star } from 'lucide-react';
+import { Filter, X, Clock, Video, Phone, Award, Languages, IndianRupee, Star } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { clientTherapistService } from '@/services/client/clientTherapistService';
 import { axiosInstance } from '@/config/axios.config';
 import { useNavigate } from 'react-router-dom';
 import FloatingChatButtonRedesigned from '@/components/client/Chatbot';
-import Header from '@/components/client/Header';
 
 interface Therapist {
   id: string;
@@ -142,7 +141,6 @@ const TherapistListing = () => {
   if (loading) {
     return (
       <>
-        <Header />
         <div className="min-h-screen w-screen bg-gradient-to-br from-blue-50 via-white to-teal-50 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center pt-16">
           <motion.div 
             className="text-center"
@@ -170,7 +168,6 @@ const TherapistListing = () => {
   if (error) {
     return (
       <>
-        <Header />
         <div className="min-h-screen w-screen bg-gradient-to-br from-blue-50 via-white to-teal-50 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center pt-16">
           <motion.div 
             className="text-center max-w-md mx-auto p-8"
@@ -196,7 +193,6 @@ const TherapistListing = () => {
 
   return (
     <>
-      <Header />
       <FloatingChatButtonRedesigned />
       
       {/* Main container with gradient background */}
@@ -423,7 +419,9 @@ const TherapistListing = () => {
                 {/* Rating Badge - Top Right */}
                 <div className="absolute top-4 right-4 z-20 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm rounded-lg px-3 py-1.5 flex items-center gap-1.5 shadow-lg border border-gray-200 dark:border-gray-700">
                   <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
-                  <span className="text-sm font-bold text-gray-900 dark:text-white">{therapist.rating.toFixed(1)}</span>
+                  <span className="text-sm font-bold text-gray-900 dark:text-white">
+                    {therapist.rating > 0 ? therapist.rating.toFixed(1) : '—'}
+                  </span>
                 </div>
                 
                 <div className="relative p-6">
@@ -520,8 +518,7 @@ const TherapistListing = () => {
                         {therapist.availableVia.map((type, idx) => {
                           const getIcon = (type: string) => {
                             if (type.toLowerCase().includes('video')) return <Video className="w-3.5 h-3.5" />;
-                            if (type.toLowerCase().includes('phone')) return <Phone className="w-3.5 h-3.5" />;
-                            return <MessageSquare className="w-3.5 h-3.5" />;
+                            if (type.toLowerCase().includes('audio')) return <Phone className="w-3.5 h-3.5" />;
                           };
                           
                           return (
@@ -540,7 +537,7 @@ const TherapistListing = () => {
                     
                       <motion.button 
                         className="w-full sm:w-auto px-6 py-2.5 bg-gradient-to-r from-blue-600 to-teal-600 text-white rounded-xl hover:from-blue-700 hover:to-teal-700 transition-all font-bold shadow-lg hover:shadow-xl text-sm"
-                        onClick={() => navigate(`/therapist/detail/${therapist.id}`)}
+                        onClick={() => navigate(`/therapists/${therapist.id}`)}
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                       >
