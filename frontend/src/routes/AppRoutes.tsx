@@ -32,7 +32,6 @@ import ClientChatPage from "@/pages/client/ChatPage";
 import TherapistChatDashboard from "@/pages/therapist/ChatDashboard";
 import AppointmentDetailPage from "@/pages/therapist/AppointmentDetail";
 import TherapistReviewsDashboard from "@/pages/therapist/Review";
-import SubscriptionAdminPage from "@/pages/admin/Subscription";
 import MarketingLayout from "@/layouts/MarketingLayout";
 
 export const router = createBrowserRouter([
@@ -111,9 +110,6 @@ export const router = createBrowserRouter([
             },
             {
                 path: 'wallet', element: <TherapistEarnings/>
-            },
-            {
-                path: 'subscription', element: <SubscriptionAdminPage/>
             },
         ]
     },
